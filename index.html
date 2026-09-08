@@ -1,0 +1,3092 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bluversea Akıllı Asistan</title>
+    
+    <!-- CSS MAKYAJ KISMI BURADA BAŞLIYOR -->
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Helvetica, Arial, sans-serif;
+            background-color: #000000;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 24px;
+            color: #F2F2F3;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        .chat-container {
+            width: 420px;
+            max-width: 100%;
+            height: 640px;
+            max-height: 100%;
+            background: #000000;
+            border: 1px solid #1C1C1E;
+            border-radius: 26px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        /* ÜST BAR: sol hamburger menü, sağ yeni sohbet butonu */
+        .top-bar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 14px 14px;
+            flex-shrink: 0;
+        }
+
+        .icon-btn {
+            background: transparent;
+            border: none;
+            color: #E8E8EA;
+            width: 38px;
+            height: 38px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+            padding: 0;
+        }
+
+        .icon-btn:hover {
+            background: rgba(255,255,255,0.08);
+        }
+
+        .chat-box {
+            flex: 1;
+            padding: 8px 18px 18px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+            background-color: #000000;
+        }
+
+        /* KARŞILAMA EKRANI: logo + hoş geldin metni. İlk mesaj gönderilince kaybolur,
+           yeni sohbet başlatılınca tekrar görünür. */
+        .welcome-screen {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            gap: 10px;
+            padding: 24px;
+            animation: slideUpFade 0.4s ease-out forwards;
+        }
+
+        .welcome-logo {
+            width: 64px;
+            height: 64px;
+            border-radius: 18px;
+            object-fit: cover;
+            margin-bottom: 6px;
+        }
+
+        .welcome-title {
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: #F5F5F6;
+        }
+
+        .welcome-subtitle {
+            font-size: 0.9rem;
+            color: #8E8E93;
+            max-width: 280px;
+            line-height: 1.4;
+        }
+
+        @keyframes slideUpFade {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .message {
+            font-size: 0.95rem;
+            line-height: 1.5;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            animation: slideUpFade 0.3s ease-out forwards;
+            max-width: 84%;
+        }
+
+        /* Kullanıcı mesajı: koyu gri kutu içinde beyaz yazı */
+        .user-message {
+            background: #26262A;
+            color: #FFFFFF;
+            align-self: flex-end;
+            padding: 12px 16px;
+            border-radius: 18px;
+            border-bottom-right-radius: 6px;
+        }
+
+        /* Bluversea cevabı: kutusuz, düz metin */
+        .bot-message {
+            background: transparent;
+            color: #E8E8EA;
+            align-self: flex-start;
+            padding: 2px 2px;
+            max-width: 100%;
+        }
+
+        .typing-indicator {
+            font-style: normal;
+            color: #8E8E93;
+            padding: 2px 2px !important;
+            font-size: 0.9rem;
+        }
+
+        /* ALT KISIM: yüzen, yuvarlak giriş çubuğu */
+        .input-area-wrapper {
+            padding: 10px 14px 16px;
+            flex-shrink: 0;
+        }
+
+        .input-area {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            background: #1C1C1E;
+            border-radius: 30px;
+            padding: 6px 6px 6px 14px;
+        }
+
+        .input-area input {
+            flex: 1;
+            border: none;
+            outline: none;
+            background: transparent;
+            font-size: 0.95rem;
+            color: #F2F2F3;
+            padding: 10px 4px;
+        }
+
+        .input-area input::placeholder {
+            color: #8E8E93;
+        }
+
+        .input-area .icon-btn-small {
+            background: transparent;
+            border: none;
+            color: #C7C7CC;
+            width: 34px;
+            height: 34px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            flex-shrink: 0;
+            transition: background-color 0.2s ease;
+            padding: 0;
+        }
+
+        .input-area .icon-btn-small:hover {
+            background: rgba(255,255,255,0.08);
+        }
+
+        /* Gönder butonu: yukarı ok, yakışan orta ton mavi */
+        .send-btn {
+            background: #3B7DF5;
+            border: none;
+            width: 38px;
+            height: 38px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            flex-shrink: 0;
+            transition: background-color 0.2s ease, transform 0.15s ease;
+        }
+
+        .send-btn:hover {
+            background: #4C89FF;
+            transform: scale(1.04);
+        }
+
+        .send-btn:active {
+            transform: scale(0.96);
+        }
+
+        /* ===================================================
+           MOBİL UYUMLULUK (RESPONSIVE)
+           480px ve altındaki ekranlarda (telefonlar) devreye girer
+           =================================================== */
+        @media (max-width: 480px) {
+            body {
+                padding: 0;
+                align-items: stretch;
+                justify-content: flex-start;
+            }
+
+            .chat-container {
+                width: 100%;
+                max-width: 100%;
+                height: 100vh;
+                border-radius: 0;
+                border: none;
+                box-shadow: none;
+            }
+
+            .message {
+                max-width: 88%;
+                font-size: 0.92rem;
+            }
+
+            .welcome-title {
+                font-size: 1.15rem;
+            }
+        }
+
+        /* Çok küçük ekranlar (eski/küçük telefonlar) */
+        @media (max-width: 360px) {
+            .message {
+                font-size: 0.88rem;
+            }
+
+            .input-area input {
+                font-size: 0.88rem;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="chat-container">
+        <div class="top-bar">
+            <button class="icon-btn" onclick="menuAc()" aria-label="Menü">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                    <line x1="3" y1="6" x2="21" y2="6"></line>
+                    <line x1="3" y1="12" x2="21" y2="12"></line>
+                    <line x1="3" y1="18" x2="21" y2="18"></line>
+                </svg>
+            </button>
+            <button class="icon-btn" onclick="yeniSohbetBaslat()" aria-label="Yeni sohbet">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12 20h9"></path>
+                    <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4Z"></path>
+                </svg>
+            </button>
+        </div>
+
+        <div class="chat-box" id="chatBox">
+            <div class="welcome-screen" id="welcomeScreen">
+                <img src="IMG_4526.jpeg" alt="Bluversea" class="welcome-logo" onerror="this.style.display='none'">
+                <div class="welcome-title">Bluversea'ya Hoş Geldin</div>
+                <div class="welcome-subtitle">Aradığın her şeye yardımcı olmak için buradayım</div>
+            </div>
+        </div>
+
+        <div class="input-area-wrapper">
+            <div class="input-area">
+                <button class="icon-btn-small" aria-label="Ekle">
+                    <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                        <line x1="12" y1="5" x2="12" y2="19"></line>
+                        <line x1="5" y1="12" x2="19" y2="12"></line>
+                    </svg>
+                </button>
+                <input type="text" id="userInput" placeholder="Bir şey sor..." onkeypress="handleKeyPress(event)">
+                <button class="icon-btn-small" aria-label="Sesli giriş">
+                    <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
+                        <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+                        <line x1="12" y1="19" x2="12" y2="23"></line>
+                        <line x1="8" y1="23" x2="16" y2="23"></line>
+                    </svg>
+                </button>
+                <button class="send-btn" onclick="sendMessage()" aria-label="Gönder">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="12" y1="19" x2="12" y2="5"></line>
+                        <polyline points="5 12 12 5 19 12"></polyline>
+                    </svg>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- JAVASCRIPT ZEKA KISMI BURADA BAŞLIYOR -->
+    <script>
+
+      // =========================================================
+      // FUTBOL ŞAMPİYONLARI VERİTABANI (Son 10 yıl + 2025-26 sezonu)
+      // Not: Anahtar olarak sezonun BİTİŞ yılı kullanılıyor
+      // (örn: 2015-16 sezonu -> 2016 anahtarı altında saklanıyor)
+      // =========================================================
+
+      // ESNEK EŞLEŞTİRME YARDIMCISI
+      // Bu fonksiyon bir metindeki TÜM boşlukları kaldırır.
+      // "la liga" ve "laliga" gibi yazımların ikisini de yakalayabilmek için kullanılır.
+      // Tüm konularda (yemek, film, uzay, futbol vb.) bu sayede boşluk farkı sorun olmaz.
+      function bosluksuz(str) {
+          return str.replace(/\s+/g, '');
+      }
+
+      // KISA ANAHTAR KELİME KORUMASI
+      // "hi", "js", "pc" gibi 3 harf ve altı kelimeler ham alt-metin (substring) olarak aranırsa
+      // "something" (i.çinde "hi" var) gibi alakasız kelimelerin içinde yanlışlıkla bulunabilir.
+      // Bu yüzden kısa kelimelerde her zaman TAM KELİME (word-boundary) eşleşmesi aranır.
+      function anahtarMetindeVarMi(orijinalMetin, metinBosluksuz, anahtarKelime, anahtarBosluksuz, toleransUygula) {
+          if (anahtarBosluksuz.length <= 3) {
+              const kacisli = anahtarKelime.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+              const desen = new RegExp('(^|[^a-zA-ZçğıöşüÇĞİÖŞÜ0-9])' + kacisli + '($|[^a-zA-ZçğıöşüÇĞİÖŞÜ0-9])', 'i');
+              return desen.test(orijinalMetin);
+          }
+          if (metinBosluksuz.includes(anahtarBosluksuz)) return true;
+          if (toleransUygula) return esnekIcerir(metinBosluksuz, anahtarBosluksuz);
+          return false;
+      }
+
+      // İKİ METİN ARASINDAKİ "DÜZENLEME MESAFESİNİ" (Levenshtein Distance) HESAPLAR
+      // Örnek: "seria" ile "serie" arasında sadece 1 harf farkı var (mesafe = 1)
+      function levenshteinMesafe(a, b) {
+          const m = a.length, n = b.length;
+          const dp = Array.from({ length: m + 1 }, () => new Array(n + 1).fill(0));
+          for (let i = 0; i <= m; i++) dp[i][0] = i;
+          for (let j = 0; j <= n; j++) dp[0][j] = j;
+          for (let i = 1; i <= m; i++) {
+              for (let j = 1; j <= n; j++) {
+                  if (a[i - 1] === b[j - 1]) {
+                      dp[i][j] = dp[i - 1][j - 1];
+                  } else {
+                      dp[i][j] = 1 + Math.min(dp[i - 1][j], dp[i][j - 1], dp[i - 1][j - 1]);
+                  }
+              }
+          }
+          return dp[m][n];
+      }
+
+      // YAZIM HATASINA TOLERANSLI ARAMA
+      // Bir metnin içinde, anahtar kelimeye ÇOK YAKIN (birkaç harf farklı) bir parça olup olmadığını kontrol eder.
+      // Bu sayede "seriaa", "seria a", "serie a" gibi TÜM yazım varyasyonları aynı konuya bağlanır.
+      // Kısa kelimelerde (4 harf ve altı) tolerans uygulanmaz; aksi halde "js", "pc" gibi kelimeler
+      // alakasız kelimelerle yanlışlıkla eşleşebilir.
+      function esnekIcerir(metin, anahtar) {
+          if (metin.includes(anahtar)) return true; // Önce hızlı ve kesin kontrol
+          if (anahtar.length <= 4) return false;
+
+          const tolerans = anahtar.length <= 8 ? 1 : 2;
+
+          for (let fark = -tolerans; fark <= tolerans; fark++) {
+              const pencereUzunlugu = anahtar.length + fark;
+              if (pencereUzunlugu < 3) continue;
+              for (let i = 0; i <= metin.length - pencereUzunlugu; i++) {
+                  const pencere = metin.substr(i, pencereUzunlugu);
+                  if (levenshteinMesafe(pencere, anahtar) <= tolerans) {
+                      return true;
+                  }
+              }
+          }
+          return false;
+      }
+
+      // DİL TESPİTİ (Basit, ücretsiz, tamamen yerel - hiçbir dış servise bağlanmaz)
+      // Türkçe'ye özgü harfler veya yaygın Türkçe kelimeler varsa Türkçe;
+      // yaygın İngilizce kelimeler ağır basıyorsa İngilizce kabul edilir.
+      function dilTespitEt(text) {
+          const turkceKarakterler = /[çğıöşüÇĞİÖŞÜ]/;
+          if (turkceKarakterler.test(text)) return 'tr';
+
+          const turkceKelimeler = ["nedir","nasıl","mısın","musun","selam","merhaba","istiyorum","ver","söyle","kaç","hangi","için","bir","bu","şu","ne","kim","yap","olur","mu","mi"];
+          const ingilizceKelimeler = ["what","how","who","when","where","why","please","hello","hi","hey","can","you","the","is","are","recipe","give","tell","code","movie","show","recommend","want","need","thanks","thank"];
+
+          const kelimeler = text.toLowerCase().split(/\s+/);
+          let trPuan = 0, enPuan = 0;
+          for (const k of kelimeler) {
+              if (turkceKelimeler.includes(k)) trPuan++;
+              if (ingilizceKelimeler.includes(k)) enPuan++;
+          }
+          if (enPuan > trPuan) return 'en';
+          return 'tr'; // Belirsizse varsayılan Türkçe
+      }
+
+      // NETLEŞTİRME SORUSU DURUM MAKİNESİ
+      // Claude'un yaptığı gibi: bazı konularda direkt cevap vermek yerine önce
+      // kullanıcıya soru sorup ona göre daha isabetli bir cevap veriyoruz.
+      // "Gerektiği yerde" kullanılır - her konuda değil, sadece burada tanımlı olanlarda.
+      let bekleyenSoru = null;
+
+      const netlestirmeYapilandirmasi = {
+          web_sitesi_turu: {
+              tetikleyiciler: ["web sitesi yapmak istiyorum", "web sitesi", "site kur", "web site yapmak"],
+              soru: `Ne tür bir web sitesi yapmak istiyorsun?
+
+1. Kişisel blog / hobi sayfası
+2. Küçük işletme / kurumsal tanıtım sitesi
+3. Basit "Merhaba Dünya" örneği yeterli
+
+Numarayla cevap verebilirsin, ya da kendi fikrini de yazabilirsin:
+
+`,
+              cevapVer: function (kullaniciCevabi) {
+                  const c = kullaniciCevabi.toLocaleLowerCase('tr-TR');
+                  if (c.includes('1') || c.includes('blog') || c.includes('hobi')) {
+                      return `Blog / hobi sayfası için örnek kod - kopyalayıp 'index.html' olarak kaydet ve çift tıkla:
+
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <title>Blogum</title>
+</head>
+<body>
+    <h1>Benim Blogum</h1>
+    <article>
+        <h2>İlk Yazım</h2>
+        <p>Bugün blog yazmaya başladım!</p>
+        <small>7 Eylül 2026</small>
+    </article>
+</body>
+</html>`;
+                  } else if (c.includes('2') || c.includes('işletme') || c.includes('kurumsal') || c.includes('şirket')) {
+                      return `Küçük işletme sitesi için örnek kod - kopyalayıp 'index.html' olarak kaydet ve çift tıkla:
+
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <title>İşletmem</title>
+</head>
+<body>
+    <header>
+        <h1>Firma Adım</h1>
+        <p>Kaliteli hizmet, uygun fiyat.</p>
+    </header>
+    <section>
+        <h2>Hizmetlerimiz</h2>
+        <ul>
+            <li>Hizmet 1</li>
+            <li>Hizmet 2</li>
+        </ul>
+    </section>
+    <footer>
+        <p>İletişim: info@firmam.com</p>
+    </footer>
+</body>
+</html>`;
+                  }
+                  return `Basit örnek kod - kopyalayıp 'index.html' olarak kaydet ve çift tıkla:
+
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <title>İlk Sitem</title>
+</head>
+<body>
+    <h1>Merhaba Dünya!</h1>
+    <p>Bu benim kendi yaptığım ilk web sitem.</p>
+</body>
+</html>`;
+              }
+          },
+          film_turu: {
+              tetikleyiciler: ["film öner", "film önerisi"],
+              soru: `Hangi türde film arıyorsun?
+
+1. Aksiyon
+2. Bilim kurgu
+3. Dram
+4. Komedi
+5. Korku
+6. Hepsini görmek istiyorum
+
+Numarayla cevap verebilirsin, ya da kendi fikrini de yazabilirsin:
+
+`,
+              cevapVer: function (kullaniciCevabi) {
+                  const c = kullaniciCevabi.toLocaleLowerCase('tr-TR');
+                  if (c.includes('1') || c.includes('aksiyon')) return "Aksiyon Film Önerileri:\n- Mad Max: Fury Road\n- John Wick\n- Dark Knight";
+                  if (c.includes('2') || c.includes('bilim kurgu')) return "Bilim Kurgu Film Önerileri:\n- Interstellar\n- Inception\n- Blade Runner 2049";
+                  if (c.includes('3') || c.includes('dram')) return "Dram Film Önerileri:\n- Yeşil Yol (The Green Mile)\n- Forrest Gump\n- Şawshank Redemption";
+                  if (c.includes('4') || c.includes('komedi')) return "Komedi Film Önerileri:\n- Kaptan Bulgur\n- Süper Lig\n- Hababam Sınıfı";
+                  if (c.includes('5') || c.includes('korku')) return "Korku Film Önerileri:\n- Aramızda\n- Sinsi\n- Şeytan Tüyü";
+                  return cevapHavuzu["film öner"];
+              }
+          },
+          dizi_turu: {
+              tetikleyiciler: ["dizi öner", "dizi önerisi"],
+              soru: `Hangi türde dizi arıyorsun?
+
+1. Dram
+2. Bilim kurgu / Fantastik
+3. Suç / Gerilim
+4. Komedi
+5. Tarihi
+6. Hepsini görmek istiyorum
+
+Numarayla cevap verebilirsin, ya da kendi fikrini de yazabilirsin:
+
+`,
+              cevapVer: function (kullaniciCevabi) {
+                  const c = kullaniciCevabi.toLocaleLowerCase('tr-TR');
+                  if (c.includes('1') || c.includes('dram')) return "Dram Dizi Önerileri:\n- Ezel\n- Kızıl Elma\n- Breaking Bad";
+                  if (c.includes('2') || c.includes('bilim kurgu') || c.includes('fantastik')) return "Bilim Kurgu / Fantastik Dizi Önerileri:\n- Stranger Things\n- Dark\n- Game of Thrones";
+                  if (c.includes('3') || c.includes('suç') || c.includes('gerilim')) return "Suç/Gerilim Dizi Önerileri:\n- Money Heist (La Casa de Papel)\n- Mindhunter";
+                  if (c.includes('4') || c.includes('komedi')) return "Komedi Dizi Önerileri:\n- Brooklyn Nine-Nine\n- Friends";
+                  if (c.includes('5') || c.includes('tarih')) return "Tarihi Dizi Önerileri:\n- Diriliş Ertuğrul\n- Vikings";
+                  return cevapHavuzu["dizi öner"];
+              }
+          }
+      };
+
+      // FUTBOL ŞAMPİYONLARI VERİTABANI (Son 10 yıl + 2025-26 sezonu)
+      // Not: Anahtar olarak sezonun BİTİŞ yılı kullanılıyor
+      // (örn: 2015-16 sezonu -> 2016 anahtarı altında saklanıyor)
+      // =========================================================
+      const futbolSampiyonlari = {
+    "süper lig": {
+        aliases: ["süper lig", "süperlig", "türkiye ligi"],
+        sampiyonlar: {
+            2016: "Beşiktaş", 2017: "Beşiktaş", 2018: "Galatasaray", 2019: "Galatasaray",
+            2020: "İstanbul Başakşehir", 2021: "Beşiktaş", 2022: "Trabzonspor",
+            2023: "Galatasaray", 2024: "Galatasaray", 2025: "Galatasaray", 2026: "Galatasaray"
+        }
+    },
+    "premier lig": {
+        aliases: ["premier lig", "premier league", "ingiltere ligi"],
+        sampiyonlar: {
+            2016: "Leicester City", 2017: "Chelsea", 2018: "Manchester City", 2019: "Manchester City",
+            2020: "Liverpool", 2021: "Manchester City", 2022: "Manchester City",
+            2023: "Manchester City", 2024: "Manchester City", 2025: "Liverpool"
+        }
+    },
+    "la liga": {
+        aliases: ["la liga", "ispanya ligi"],
+        sampiyonlar: {
+            2016: "Barcelona", 2017: "Real Madrid", 2018: "Barcelona", 2019: "Barcelona",
+            2020: "Real Madrid", 2021: "Atletico Madrid", 2022: "Real Madrid",
+            2023: "Barcelona", 2024: "Real Madrid", 2025: "Barcelona", 2026: "Barcelona"
+        }
+    },
+    "serie a": {
+        aliases: ["serie a", "italya ligi"],
+        sampiyonlar: {
+            2016: "Juventus", 2017: "Juventus", 2018: "Juventus", 2019: "Juventus",
+            2020: "Juventus", 2021: "Inter", 2022: "AC Milan",
+            2023: "Napoli", 2024: "Inter", 2025: "Napoli", 2026: "Inter"
+        }
+    },
+    "bundesliga": {
+        aliases: ["bundesliga", "almanya ligi"],
+        sampiyonlar: {
+            2016: "Bayern Münih", 2017: "Bayern Münih", 2018: "Bayern Münih", 2019: "Bayern Münih",
+            2020: "Bayern Münih", 2021: "Bayern Münih", 2022: "Bayern Münih",
+            2023: "Bayern Münih", 2024: "Bayer Leverkusen", 2025: "Bayern Münih", 2026: "Bayern Münih"
+        }
+    },
+    "ligue 1": {
+        aliases: ["ligue 1", "fransa ligi"],
+        sampiyonlar: {
+            2016: "Paris Saint-Germain", 2017: "AS Monaco", 2018: "Paris Saint-Germain",
+            2019: "Paris Saint-Germain", 2020: "Paris Saint-Germain", 2021: "Lille",
+            2022: "Paris Saint-Germain", 2023: "Paris Saint-Germain", 2024: "Paris Saint-Germain",
+            2025: "Paris Saint-Germain", 2026: "Paris Saint-Germain"
+        }
+    },
+    "şampiyonlar ligi": {
+        aliases: ["şampiyonlar ligi", "sampiyonlar ligi", "champions league", "ucl"],
+        sampiyonlar: {
+            2016: "Real Madrid", 2017: "Real Madrid", 2018: "Real Madrid", 2019: "Liverpool",
+            2020: "Bayern Münih", 2021: "Chelsea", 2022: "Real Madrid",
+            2023: "Manchester City", 2024: "Real Madrid", 2025: "Paris Saint-Germain", 2026: "Paris Saint-Germain"
+        }
+    }
+};
+
+function findFootballChampion(text, dil) {
+    dil = dil || 'tr';
+    const textBosluksuz = bosluksuz(text);
+    let eslesenLig = null;
+    let ligAdi = null;
+
+    // 1. AŞAMA: Önce TAM eşleşme ara
+    for (const key in futbolSampiyonlari) {
+        const lig = futbolSampiyonlari[key];
+        for (const alias of lig.aliases) {
+            const aliasBosluksuz = bosluksuz(alias);
+            if (textBosluksuz.includes(aliasBosluksuz)) {
+                eslesenLig = lig;
+                ligAdi = key;
+                break;
+            }
+        }
+        if (eslesenLig) break;
+    }
+
+    // 2. AŞAMA: Tam eşleşme yoksa, yazım hatasına toleranslı ara
+    if (!eslesenLig) {
+        for (const key in futbolSampiyonlari) {
+            const lig = futbolSampiyonlari[key];
+            for (const alias of lig.aliases) {
+                const aliasBosluksuz = bosluksuz(alias);
+                if (esnekIcerir(textBosluksuz, aliasBosluksuz)) {
+                    eslesenLig = lig;
+                    ligAdi = key;
+                    break;
+                }
+            }
+            if (eslesenLig) break;
+        }
+    }
+
+    if (!eslesenLig) {
+        // Lig ismi geçmiyor ama "şampiyon"/"champion" kelimesi varsa, netleştirici soru sor
+        if (text.includes("şampiyon") || text.includes("sampiyon") || text.includes("champion")) {
+            if (dil === 'en') {
+                return `Which year and which league's champion are you curious about?
+
+Leagues: Süper Lig (Turkey), Premier League, La Liga, Serie A, Bundesliga, Ligue 1, Champions League
+
+Example: "2022 super lig champion" or "2020 premier league champion"`;
+            }
+            return `Hangi sene ve hangi ligin şampiyonunu merak ediyorsun?
+
+Ligler: Süper Lig, Premier Lig, La Liga, Serie A, Bundesliga, Ligue 1, Şampiyonlar Ligi
+
+Örnek: "2022 süper lig şampiyonu" veya "2020 premier lig şampiyonu"`;
+        }
+        return null; // Futbol sorusu değil
+    }
+
+    const yilEslesme = text.match(/\b(20[1-2][0-9])\b/);
+
+    if (yilEslesme) {
+        const yil = parseInt(yilEslesme[1]);
+        const sampiyon = eslesenLig.sampiyonlar[yil];
+        if (sampiyon) {
+            if (dil === 'en') return `${ligAdi.toUpperCase()} champion in ${yil}: ${sampiyon}`;
+            return `${yil} yılında ${ligAdi.toUpperCase()} şampiyonu: ${sampiyon}`;
+        } else {
+            if (dil === 'en') return `I don't have ${ligAdi} data for ${yil}. I only know champions from 2016 to 2026.`;
+            return `${yil} yılı için elimde ${ligAdi} bilgisi yok. Sadece 2016-2026 arasındaki şampiyonları biliyorum.`;
+        }
+    } else {
+        let liste = dil === 'en'
+            ? `${ligAdi.toUpperCase()} - Champions of Recent Years:\n`
+            : `${ligAdi.toUpperCase()} - Son Yılların Şampiyonları:\n`;
+        for (const yil in eslesenLig.sampiyonlar) {
+            liste += `${yil}: ${eslesenLig.sampiyonlar[yil]}\n`;
+        }
+        return liste;
+    }
+}
+
+      const cevapHavuzu = {
+    // -----------------------------------------
+    // SELAMLAŞMA & BLUVERSEA
+    // -----------------------------------------
+    "merhaba": "Merhaba! Ben Bluversea, sana bugün nasıl yardımcı olabilirim?",
+    "mrb": "Merhaba! Ben Bluversea, sana bugün nasıl yardımcı olabilirim?",
+    "selam": "Selam! Sana nasıl yardımcı olabilirim? Bana seyahat rotaları, teknolojik cihazlar veya sosyal medya stratejileri sorabilirsin.",
+    "slm": "Selam! Sana nasıl yardımcı olabilirim?",
+    "günaydın": "Günaydın! Sana nasıl yardımcı olabilirim?",
+    "iyi akşamlar": "İyi akşamlar! Sana nasıl yardımcı olabilirim?",
+    "nasılsın": "Teşekkür ederim, ben harikayım! Sana nasıl yardımcı olabilirim?",
+    
+    "bluversea": "Bluversea, markalar için modern, hızlı ve satışa hazır web sayfaları kuran profesyonel bir teknoloji işletmesidir.",
+    "kimsin": "Ben Bluversea tarafından geliştirilen, sana yardımcı olmak için tasarlanmış akıllı bir asistanım.",
+
+    // -----------------------------------------
+    // FUTBOL DETAYLARI
+    // -----------------------------------------
+    "futbol": "Futbol, 11'er kişilik iki takım arasında oynanan bir spordur. Bana 'ofsayt', 'taç', 'penaltı' veya 'saha ölçüleri' de sorabilirsin.",
+    "maç": "Futbol, 11'er kişilik iki takım arasında oynanan bir spordur. Bana 'ofsayt', 'taç', 'penaltı' veya 'saha ölçüleri' de sorabilirsin.",
+    "ofsayt": "Ofsayt futbolda hücum oyuncusunun, pas atıldığı anda rakip kale çizgisine, kaleci hariç son defans oyuncusundan daha yakın olmasıdır.",
+    "taç": "Taç atışı, top sahanın yan çizgilerinden çıkarsa oyunu yeniden başlatma yöntemidir.",
+    "saha": "Standart futbol sahası dikdörtgendir. Uzunluk 100-110 metre, genişlik 64-75 metredir.",
+    "ölçü": "Standart futbol sahası dikdörtgendir. Uzunluk 100-110 metre, genişlik 64-75 metredir.",
+    "penaltı": "Penaltı, ceza sahası içinde yapılan büyük bir faul sonucu 11 metreden atılan vuruştur.",
+
+    // FENERBAHÇE
+    "fenerbahçe": "Fenerbahçe Spor Kulübü, 1907 yılında Kadıköy'de kurulmuştur. Renkleri sarı-laciverttir.",
+    "fener": "Fenerbahçe Spor Kulübü, 1907 yılında Kadıköy'de kurulmuştur. Renkleri sarı-laciverttir.",
+    "fb": "Fenerbahçe Spor Kulübü, 1907 yılında Kadıköy'de kurulmuştur. Renkleri sarı-laciverttir.",
+
+    // -----------------------------------------
+    // MATEMATİK & GEOMETRİ
+    // -----------------------------------------
+    "matematik": "Matematik sayıların evrensel dilidir. Bana 'yüz yirmi artı otuz' veya '25 * 4' gibi işlemler yazarsan anında çözerim.",
+    "hesapla": "Matematik sayıların evrensel dilidir. Bana 'yüz yirmi artı otuz' veya '25 * 4' gibi işlemler yazarsan anında çözerim.",
+    
+    "geometri": "Geometrik şekiller iki boyutlu (düzlemsel) ve üç boyutlu (cisim) olarak ayrılır.\n\nİki Boyutlu Temel Şekiller:\n- Kare: 4 kenarı ve 4 köşesi vardır. İç açıları 90 derecedir.\n- Dikdörtgen: Karşılıklı kenarları eşittir. Tüm iç açıları 90 derecedir.\n- Üçgen: İç açılarının toplamı her zaman 180 derecedir.\n- Daire ve Çember: Çember sadece dış çizgiyken, daire onun içi dolu halidir.\n\nÜç Boyutlu Cisimler:\n- Küp: 6 yüzeyi, 12 ayrıtı ve 8 köşesi vardır.\n- Silindir: Alt ve üst tabanı daire, yan yüzeyi eğridir.\n- Küre: Hiç köşesi ve kenarı yoktur. Tam yuvarlak bir yapıdadır.",
+    "şekiller": "Geometrik şekiller iki boyutlu (düzlemsel) ve üç boyutlu (cisim) olarak ayrılır.\n\nİki Boyutlu Temel Şekiller:\n- Kare: 4 kenarı ve 4 köşesi vardır. İç açıları 90 derecedir.\n- Dikdörtgen: Karşılıklı kenarları eşittir. Tüm iç açıları 90 derecedir.\n- Üçgen: İç açılarının toplamı her zaman 180 derecedir.\n- Daire ve Çember: Çember sadece dış çizgiyken, daire onun içi dolu halidir.\n\nÜç Boyutlu Cisimler:\n- Küp: 6 yüzeyi, 12 ayrıtı ve 8 köşesi vardır.\n- Silindir: Alt ve üst tabanı daire, yan yüzeyi eğridir.\n- Küre: Hiç köşesi ve kenarı yoktur. Tam yuvarlak bir yapıdadır.",
+
+    "formül": "İşte senin için alan, çevre ve hacim formülleri:\n\nİki Boyutlu (Çevre ve Alan):\n- Kare: Çevre = 4a | Alan = a²\n- Dikdörtgen: Çevre = 2(a + b) | Alan = a * b\n- Üçgen: Çevre = a + b + c | Alan = (Taban * Yükseklik) / 2\n- Daire: Çevre = 2πr | Alan = πr²\n\nÜç Boyutlu (Hacim):\n- Küp: Hacim = a³\n- Dikdörtgenler Prizması: Hacim = a * b * h\n- Silindir: Hacim = πr² * h\n- Küre: Hacim = (4/3)πr³",
+    "hacim": "İşte senin için alan, çevre ve hacim formülleri:\n\nİki Boyutlu (Çevre ve Alan):\n- Kare: Çevre = 4a | Alan = a²\n- Dikdörtgen: Çevre = 2(a + b) | Alan = a * b\n- Üçgen: Çevre = a + b + c | Alan = (Taban * Yükseklik) / 2\n- Daire: Çevre = 2πr | Alan = πr²\n\nÜç Boyutlu (Hacim):\n- Küp: Hacim = a³\n- Dikdörtgenler Prizması: Hacim = a * b * h\n- Silindir: Hacim = πr² * h\n- Küre: Hacim = (4/3)πr³",
+    "alan hesap": "İşte senin için alan, çevre ve hacim formülleri:\n\nİki Boyutlu (Çevre ve Alan):\n- Kare: Çevre = 4a | Alan = a²\n- Dikdörtgen: Çevre = 2(a + b) | Alan = a * b\n- Üçgen: Çevre = a + b + c | Alan = (Taban * Yükseklik) / 2\n- Daire: Çevre = 2πr | Alan = πr²\n\nÜç Boyutlu (Hacim):\n- Küp: Hacim = a³\n- Dikdörtgenler Prizması: Hacim = a * b * h\n- Silindir: Hacim = πr² * h\n- Küre: Hacim = (4/3)πr³",
+
+    "üçgen": "Üçgen: İç açılar toplamı 180 derecedir. Dış açılar toplamı 360 derecedir. Eşkenar üçgende her iç açı 60, dış açı 120 derecedir.",
+    "kare": "Kare: İç açılar toplamı 360 derecedir. Her bir iç açısı 90 derece, dış açısı da 90 derecedir.",
+    "dikdörtgen": "Dikdörtgen: İç açılar toplamı 360 derecedir. Her bir iç açısı 90 derece, dış açısı da 90 derecedir.",
+    "beşgen": "Düzgün Beşgen: İç açılar toplamı 540 derecedir. Bir iç açısı 108 derece, bir dış açısı 72 derecedir.",
+    "altıgen": "Düzgün Altıgen: İç açılar toplamı 720 derecedir. Bir iç açısı 120 derece, bir dış açısı 60 derecedir.",
+    "sekizgen": "Düzgün Sekizgen: İç açılar toplamı 1080 derecedir. Bir iç açısı 135 derece, bir dış açısı 45 derecedir.",
+    
+    "çokgen": "Temel Şekillerin Açı Değerleri:\n- Üçgen: İç 180, dış 360 derecedir. (Eşkenar: iç 60, dış 120)\n- Kare ve Dikdörtgen: İç 360 derecedir. (İç 90, dış 90)\n- Düzgün Beşgen: İç 540 derecedir. (İç 108, dış 72)\n- Düzgün Altıgen: İç 720 derecedir. (İç 120, dış 60)\n- Düzgün Sekizgen: İç 1080 derecedir. (İç 135, dış 45)",
+    "açı": "Temel Şekillerin Açı Değerleri:\n- Üçgen: İç 180, dış 360 derecedir. (Eşkenar: iç 60, dış 120)\n- Kare ve Dikdörtgen: İç 360 derecedir. (İç 90, dış 90)\n- Düzgün Beşgen: İç 540 derecedir. (İç 108, dış 72)\n- Düzgün Altıgen: İç 720 derecedir. (İç 120, dış 60)\n- Düzgün Sekizgen: İç 1080 derecedir. (İç 135, dış 45)",
+
+    // -----------------------------------------
+    // 1. SEYAHAT REHBERİ (TÜRKİYE)
+    // -----------------------------------------
+    "marmara": `Marmara Bölgesi Seyahat Rehberi:
+- İstanbul (Avrupa): Tarihi Yarımada (Sultanahmet, Ayasofya, Topkapı Sarayı, Kapalıçarşı), Beyoğlu (İstiklal Caddesi, Galata Kulesi), Beşiktaş.
+- İstanbul (Anadolu): Kadıköy, Üsküdar (Kız Kulesi), Adalar. Balık ekmek, midye dolma yenir.
+- Edirne: Selimiye Camii, Kırkpınar. Tava ciğer meşhurdur.
+- Bursa: Ulucami, Yeşil Türbe, Koza Han, Cumalıkızık, Uludağ, İznik. İskender kebap ve kestane şekeri yenir.
+- Çanakkale: Gelibolu Şehitlikleri, Assos, Bozcaada, Gökçeada. Peynir helvası meşhurdur.
+- Balıkesir: Ayvalık, Cunda, Kazdağları. Höşmerim tatlısı yenir.
+- Diğer: Tekirdağ (köfte, bağlar), Yalova (Termal), Kocaeli (Seka Park, Kartepe), Sakarya (Sapanca).`,
+    "istanbul": `Marmara Bölgesi Seyahat Rehberi:
+- İstanbul (Avrupa): Tarihi Yarımada (Sultanahmet, Ayasofya, Topkapı Sarayı, Kapalıçarşı), Beyoğlu (İstiklal Caddesi, Galata Kulesi), Beşiktaş.
+- İstanbul (Anadolu): Kadıköy, Üsküdar (Kız Kulesi), Adalar. Balık ekmek, midye dolma yenir.
+- Edirne: Selimiye Camii, Kırkpınar. Tava ciğer meşhurdur.
+- Bursa: Ulucami, Yeşil Türbe, Koza Han, Cumalıkızık, Uludağ, İznik. İskender kebap ve kestane şekeri yenir.
+- Çanakkale: Gelibolu Şehitlikleri, Assos, Bozcaada, Gökçeada. Peynir helvası meşhurdur.
+- Balıkesir: Ayvalık, Cunda, Kazdağları. Höşmerim tatlısı yenir.
+- Diğer: Tekirdağ (köfte, bağlar), Yalova (Termal), Kocaeli (Seka Park, Kartepe), Sakarya (Sapanca).`,
+    "bursa": `Marmara Bölgesi Seyahat Rehberi:
+- İstanbul (Avrupa): Tarihi Yarımada (Sultanahmet, Ayasofya, Topkapı Sarayı, Kapalıçarşı), Beyoğlu (İstiklal Caddesi, Galata Kulesi), Beşiktaş.
+- İstanbul (Anadolu): Kadıköy, Üsküdar (Kız Kulesi), Adalar. Balık ekmek, midye dolma yenir.
+- Edirne: Selimiye Camii, Kırkpınar. Tava ciğer meşhurdur.
+- Bursa: Ulucami, Yeşil Türbe, Koza Han, Cumalıkızık, Uludağ, İznik. İskender kebap ve kestane şekeri yenir.
+- Çanakkale: Gelibolu Şehitlikleri, Assos, Bozcaada, Gökçeada. Peynir helvası meşhurdur.
+- Balıkesir: Ayvalık, Cunda, Kazdağları. Höşmerim tatlısı yenir.
+- Diğer: Tekirdağ (köfte, bağlar), Yalova (Termal), Kocaeli (Seka Park, Kartepe), Sakarya (Sapanca).`,
+    "çanakkale": `Marmara Bölgesi Seyahat Rehberi:
+- İstanbul (Avrupa): Tarihi Yarımada (Sultanahmet, Ayasofya, Topkapı Sarayı, Kapalıçarşı), Beyoğlu (İstiklal Caddesi, Galata Kulesi), Beşiktaş.
+- İstanbul (Anadolu): Kadıköy, Üsküdar (Kız Kulesi), Adalar. Balık ekmek, midye dolma yenir.
+- Edirne: Selimiye Camii, Kırkpınar. Tava ciğer meşhurdur.
+- Bursa: Ulucami, Yeşil Türbe, Koza Han, Cumalıkızık, Uludağ, İznik. İskender kebap ve kestane şekeri yenir.
+- Çanakkale: Gelibolu Şehitlikleri, Assos, Bozcaada, Gökçeada. Peynir helvası meşhurdur.
+- Balıkesir: Ayvalık, Cunda, Kazdağları. Höşmerim tatlısı yenir.
+- Diğer: Tekirdağ (köfte, bağlar), Yalova (Termal), Kocaeli (Seka Park, Kartepe), Sakarya (Sapanca).`,
+    "balıkesir": `Marmara Bölgesi Seyahat Rehberi:
+- İstanbul (Avrupa): Tarihi Yarımada (Sultanahmet, Ayasofya, Topkapı Sarayı, Kapalıçarşı), Beyoğlu (İstiklal Caddesi, Galata Kulesi), Beşiktaş.
+- İstanbul (Anadolu): Kadıköy, Üsküdar (Kız Kulesi), Adalar. Balık ekmek, midye dolma yenir.
+- Edirne: Selimiye Camii, Kırkpınar. Tava ciğer meşhurdur.
+- Bursa: Ulucami, Yeşil Türbe, Koza Han, Cumalıkızık, Uludağ, İznik. İskender kebap ve kestane şekeri yenir.
+- Çanakkale: Gelibolu Şehitlikleri, Assos, Bozcaada, Gökçeada. Peynir helvası meşhurdur.
+- Balıkesir: Ayvalık, Cunda, Kazdağları. Höşmerim tatlısı yenir.
+- Diğer: Tekirdağ (köfte, bağlar), Yalova (Termal), Kocaeli (Seka Park, Kartepe), Sakarya (Sapanca).`,
+
+    "ege": `Ege Bölgesi Seyahat Rehberi:
+- İzmir: Konak Saat Kulesi, Kordon, Asansör. Çeşme, Alaçatı, Foça, Sığacık, Bergama, Şirince, Efes Antik Kenti. Boyoz, kumru, şambali ve İzmir köftesi meşhurdur.
+- Muğla: Bodrum (Kalesi, Halikarnas), Marmaris, Fethiye (Ölüdeniz, Saklıkent), Datça, Köyceğiz, Milas. Çökertme kebabı denenmelidir.
+- Denizli: Hierapolis (Pamukkale Travertenleri). Denizli kebabı meşhurdur.
+- Aydın: Kuşadası, Didim (Apollon Tapınağı). Aydın kebabı ve inciri efsanedir.
+- Manisa: Spil Dağı, Sardes Antik Kenti. Mesir macunu ve Manisa kebabı yenir.
+- Uşak: Ulubey Kanyonu. Uşak tarhanası meşhurdur.`,
+    "izmir": `Ege Bölgesi Seyahat Rehberi:
+- İzmir: Konak Saat Kulesi, Kordon, Asansör. Çeşme, Alaçatı, Foça, Sığacık, Bergama, Şirince, Efes Antik Kenti. Boyoz, kumru, şambali ve İzmir köftesi meşhurdur.
+- Muğla: Bodrum (Kalesi, Halikarnas), Marmaris, Fethiye (Ölüdeniz, Saklıkent), Datça, Köyceğiz, Milas. Çökertme kebabı denenmelidir.
+- Denizli: Hierapolis (Pamukkale Travertenleri). Denizli kebabı meşhurdur.
+- Aydın: Kuşadası, Didim (Apollon Tapınağı). Aydın kebabı ve inciri efsanedir.
+- Manisa: Spil Dağı, Sardes Antik Kenti. Mesir macunu ve Manisa kebabı yenir.
+- Uşak: Ulubey Kanyonu. Uşak tarhanası meşhurdur.`,
+    "muğla": `Ege Bölgesi Seyahat Rehberi:
+- İzmir: Konak Saat Kulesi, Kordon, Asansör. Çeşme, Alaçatı, Foça, Sığacık, Bergama, Şirince, Efes Antik Kenti. Boyoz, kumru, şambali ve İzmir köftesi meşhurdur.
+- Muğla: Bodrum (Kalesi, Halikarnas), Marmaris, Fethiye (Ölüdeniz, Saklıkent), Datça, Köyceğiz, Milas. Çökertme kebabı denenmelidir.
+- Denizli: Hierapolis (Pamukkale Travertenleri). Denizli kebabı meşhurdur.
+- Aydın: Kuşadası, Didim (Apollon Tapınağı). Aydın kebabı ve inciri efsanedir.
+- Manisa: Spil Dağı, Sardes Antik Kenti. Mesir macunu ve Manisa kebabı yenir.
+- Uşak: Ulubey Kanyonu. Uşak tarhanası meşhurdur.`,
+    "bodrum": `Ege Bölgesi Seyahat Rehberi:
+- İzmir: Konak Saat Kulesi, Kordon, Asansör. Çeşme, Alaçatı, Foça, Sığacık, Bergama, Şirince, Efes Antik Kenti. Boyoz, kumru, şambali ve İzmir köftesi meşhurdur.
+- Muğla: Bodrum (Kalesi, Halikarnas), Marmaris, Fethiye (Ölüdeniz, Saklıkent), Datça, Köyceğiz, Milas. Çökertme kebabı denenmelidir.
+- Denizli: Hierapolis (Pamukkale Travertenleri). Denizli kebabı meşhurdur.
+- Aydın: Kuşadası, Didim (Apollon Tapınağı). Aydın kebabı ve inciri efsanedir.
+- Manisa: Spil Dağı, Sardes Antik Kenti. Mesir macunu ve Manisa kebabı yenir.
+- Uşak: Ulubey Kanyonu. Uşak tarhanası meşhurdur.`,
+    "çeşme": `Ege Bölgesi Seyahat Rehberi:
+- İzmir: Konak Saat Kulesi, Kordon, Asansör. Çeşme, Alaçatı, Foça, Sığacık, Bergama, Şirince, Efes Antik Kenti. Boyoz, kumru, şambali ve İzmir köftesi meşhurdur.
+- Muğla: Bodrum (Kalesi, Halikarnas), Marmaris, Fethiye (Ölüdeniz, Saklıkent), Datça, Köyceğiz, Milas. Çökertme kebabı denenmelidir.
+- Denizli: Hierapolis (Pamukkale Travertenleri). Denizli kebabı meşhurdur.
+- Aydın: Kuşadası, Didim (Apollon Tapınağı). Aydın kebabı ve inciri efsanedir.
+- Manisa: Spil Dağı, Sardes Antik Kenti. Mesir macunu ve Manisa kebabı yenir.
+- Uşak: Ulubey Kanyonu. Uşak tarhanası meşhurdur.`,
+
+    "akdeniz": `Akdeniz Bölgesi Seyahat Rehberi:
+- Antalya: Kaleiçi, Konyaaltı, Lara, Kemer (Olympos), Alanya, Side, Kaş (Kaputaş), Demre. Piyaz ve şiş köfte meşhurdur.
+- Adana: Taşköprü, Sabancı Merkez Camii, Seyhan Baraj Gölü. Adana kebabı, şalgam ve bici bici efsanedir.
+- Hatay: Antakya, Habibi Neccar Camii, St. Pierre Kilisesi. Künefe, tepsi kebabı, oruk ve zengin mezeleriyle bilinir.
+- Mersin: Tarsus, Kızkalesi, Cennet-Cehennem Mağaraları. Tantuni ve cezerye yenir.
+- Diğer: Burdur (Salda Gölü), Isparta (Gül bahçeleri, Eğirdir Gölü), Kahramanmaraş (Maraş Dondurması), Osmaniye.`,
+    "antalya": `Akdeniz Bölgesi Seyahat Rehberi:
+- Antalya: Kaleiçi, Konyaaltı, Lara, Kemer (Olympos), Alanya, Side, Kaş (Kaputaş), Demre. Piyaz ve şiş köfte meşhurdur.
+- Adana: Taşköprü, Sabancı Merkez Camii, Seyhan Baraj Gölü. Adana kebabı, şalgam ve bici bici efsanedir.
+- Hatay: Antakya, Habibi Neccar Camii, St. Pierre Kilisesi. Künefe, tepsi kebabı, oruk ve zengin mezeleriyle bilinir.
+- Mersin: Tarsus, Kızkalesi, Cennet-Cehennem Mağaraları. Tantuni ve cezerye yenir.
+- Diğer: Burdur (Salda Gölü), Isparta (Gül bahçeleri, Eğirdir Gölü), Kahramanmaraş (Maraş Dondurması), Osmaniye.`,
+    "adana": `Akdeniz Bölgesi Seyahat Rehberi:
+- Antalya: Kaleiçi, Konyaaltı, Lara, Kemer (Olympos), Alanya, Side, Kaş (Kaputaş), Demre. Piyaz ve şiş köfte meşhurdur.
+- Adana: Taşköprü, Sabancı Merkez Camii, Seyhan Baraj Gölü. Adana kebabı, şalgam ve bici bici efsanedir.
+- Hatay: Antakya, Habibi Neccar Camii, St. Pierre Kilisesi. Künefe, tepsi kebabı, oruk ve zengin mezeleriyle bilinir.
+- Mersin: Tarsus, Kızkalesi, Cennet-Cehennem Mağaraları. Tantuni ve cezerye yenir.
+- Diğer: Burdur (Salda Gölü), Isparta (Gül bahçeleri, Eğirdir Gölü), Kahramanmaraş (Maraş Dondurması), Osmaniye.`,
+    "hatay": `Akdeniz Bölgesi Seyahat Rehberi:
+- Antalya: Kaleiçi, Konyaaltı, Lara, Kemer (Olympos), Alanya, Side, Kaş (Kaputaş), Demre. Piyaz ve şiş köfte meşhurdur.
+- Adana: Taşköprü, Sabancı Merkez Camii, Seyhan Baraj Gölü. Adana kebabı, şalgam ve bici bici efsanedir.
+- Hatay: Antakya, Habibi Neccar Camii, St. Pierre Kilisesi. Künefe, tepsi kebabı, oruk ve zengin mezeleriyle bilinir.
+- Mersin: Tarsus, Kızkalesi, Cennet-Cehennem Mağaraları. Tantuni ve cezerye yenir.
+- Diğer: Burdur (Salda Gölü), Isparta (Gül bahçeleri, Eğirdir Gölü), Kahramanmaraş (Maraş Dondurması), Osmaniye.`,
+
+    "iç anadolu": `İç Anadolu Bölgesi Seyahat Rehberi:
+- Ankara: Anıtkabir, Ankara Kalesi, Beypazarı evleri, Kızılcahamam. Ankara tava ve çubuk turşusu meşhurdur.
+- Konya: Mevlana Müzesi, Çatalhöyük, Sille Köyü. Etli ekmek ve fırın kebabı yenir.
+- Nevşehir: Peri Bacaları, Göreme, balon turları, Ihlara Vadisi ve Yeraltı Şehirleri. Testi kebabı meşhurdur.
+- Kayseri: Erciyes Kayak Merkezi, Kayseri Kalesi. Mantı ve pastırma efsanedir.
+- Eskişehir: Odunpazarı evleri, Porsuk Çayı, Sazova Parkı. Çibörek ve met helvası yenir.
+- Sivas: Çifte Minareli Medrese, Divriği Ulu Camii (UNESCO), Kangal Balıklı Kaplıca. Sivas köftesi meşhurdur.`,
+    "ankara": `İç Anadolu Bölgesi Seyahat Rehberi:
+- Ankara: Anıtkabir, Ankara Kalesi, Beypazarı evleri, Kızılcahamam. Ankara tava ve çubuk turşusu meşhurdur.
+- Konya: Mevlana Müzesi, Çatalhöyük, Sille Köyü. Etli ekmek ve fırın kebabı yenir.
+- Nevşehir: Peri Bacaları, Göreme, balon turları, Ihlara Vadisi ve Yeraltı Şehirleri. Testi kebabı meşhurdur.
+- Kayseri: Erciyes Kayak Merkezi, Kayseri Kalesi. Mantı ve pastırma efsanedir.
+- Eskişehir: Odunpazarı evleri, Porsuk Çayı, Sazova Parkı. Çibörek ve met helvası yenir.
+- Sivas: Çifte Minareli Medrese, Divriği Ulu Camii (UNESCO), Kangal Balıklı Kaplıca. Sivas köftesi meşhurdur.`,
+    "kapadokya": `İç Anadolu Bölgesi Seyahat Rehberi:
+- Ankara: Anıtkabir, Ankara Kalesi, Beypazarı evleri, Kızılcahamam. Ankara tava ve çubuk turşusu meşhurdur.
+- Konya: Mevlana Müzesi, Çatalhöyük, Sille Köyü. Etli ekmek ve fırın kebabı yenir.
+- Nevşehir: Peri Bacaları, Göreme, balon turları, Ihlara Vadisi ve Yeraltı Şehirleri. Testi kebabı meşhurdur.
+- Kayseri: Erciyes Kayak Merkezi, Kayseri Kalesi. Mantı ve pastırma efsanedir.
+- Eskişehir: Odunpazarı evleri, Porsuk Çayı, Sazova Parkı. Çibörek ve met helvası yenir.
+- Sivas: Çifte Minareli Medrese, Divriği Ulu Camii (UNESCO), Kangal Balıklı Kaplıca. Sivas köftesi meşhurdur.`,
+    "eskişehir": `İç Anadolu Bölgesi Seyahat Rehberi:
+- Ankara: Anıtkabir, Ankara Kalesi, Beypazarı evleri, Kızılcahamam. Ankara tava ve çubuk turşusu meşhurdur.
+- Konya: Mevlana Müzesi, Çatalhöyük, Sille Köyü. Etli ekmek ve fırın kebabı yenir.
+- Nevşehir: Peri Bacaları, Göreme, balon turları, Ihlara Vadisi ve Yeraltı Şehirleri. Testi kebabı meşhurdur.
+- Kayseri: Erciyes Kayak Merkezi, Kayseri Kalesi. Mantı ve pastırma efsanedir.
+- Eskişehir: Odunpazarı evleri, Porsuk Çayı, Sazova Parkı. Çibörek ve met helvası yenir.
+- Sivas: Çifte Minareli Medrese, Divriği Ulu Camii (UNESCO), Kangal Balıklı Kaplıca. Sivas köftesi meşhurdur.`,
+
+    "karadeniz": `Karadeniz Bölgesi Seyahat Rehberi:
+- Trabzon: Sümela Manastırı, Uzungöl, Ayasofya Müzesi. Akçaabat köftesi ve kuymak meşhurdur.
+- Rize: Ayder Yaylası, Fırtına Vadisi (rafting). Mıhlama, laz böreği ve çay efsanedir.
+- Samsun: Bandırma Vapuru Müzesi, Onur Anıtı, Kızılırmak Deltası. Bafra pidesi yenir.
+- Amasya: Kral Kaya Mezarları, Yeşilırmak, Amasya evleri. Amasya elması meşhurdur.
+- Diğer: Artvin (Karagöl, Macahel), Ordu (Boztepe teleferik), Giresun, Gümüşhane (Karaca Mağarası), Sinop (Tarihi Cezaevi, İnceburun), Kastamonu, Çorum (Hattuşaş), Tokat.`,
+    "trabzon": `Karadeniz Bölgesi Seyahat Rehberi:
+- Trabzon: Sümela Manastırı, Uzungöl, Ayasofya Müzesi. Akçaabat köftesi ve kuymak meşhurdur.
+- Rize: Ayder Yaylası, Fırtına Vadisi (rafting). Mıhlama, laz böreği ve çay efsanedir.
+- Samsun: Bandırma Vapuru Müzesi, Onur Anıtı, Kızılırmak Deltası. Bafra pidesi yenir.
+- Amasya: Kral Kaya Mezarları, Yeşilırmak, Amasya evleri. Amasya elması meşhurdur.
+- Diğer: Artvin (Karagöl, Macahel), Ordu (Boztepe teleferik), Giresun, Gümüşhane (Karaca Mağarası), Sinop (Tarihi Cezaevi, İnceburun), Kastamonu, Çorum (Hattuşaş), Tokat.`,
+    "rize": `Karadeniz Bölgesi Seyahat Rehberi:
+- Trabzon: Sümela Manastırı, Uzungöl, Ayasofya Müzesi. Akçaabat köftesi ve kuymak meşhurdur.
+- Rize: Ayder Yaylası, Fırtına Vadisi (rafting). Mıhlama, laz böreği ve çay efsanedir.
+- Samsun: Bandırma Vapuru Müzesi, Onur Anıtı, Kızılırmak Deltası. Bafra pidesi yenir.
+- Amasya: Kral Kaya Mezarları, Yeşilırmak, Amasya evleri. Amasya elması meşhurdur.
+- Diğer: Artvin (Karagöl, Macahel), Ordu (Boztepe teleferik), Giresun, Gümüşhane (Karaca Mağarası), Sinop (Tarihi Cezaevi, İnceburun), Kastamonu, Çorum (Hattuşaş), Tokat.`,
+    "ayder": `Karadeniz Bölgesi Seyahat Rehberi:
+- Trabzon: Sümela Manastırı, Uzungöl, Ayasofya Müzesi. Akçaabat köftesi ve kuymak meşhurdur.
+- Rize: Ayder Yaylası, Fırtına Vadisi (rafting). Mıhlama, laz böreği ve çay efsanedir.
+- Samsun: Bandırma Vapuru Müzesi, Onur Anıtı, Kızılırmak Deltası. Bafra pidesi yenir.
+- Amasya: Kral Kaya Mezarları, Yeşilırmak, Amasya evleri. Amasya elması meşhurdur.
+- Diğer: Artvin (Karagöl, Macahel), Ordu (Boztepe teleferik), Giresun, Gümüşhane (Karaca Mağarası), Sinop (Tarihi Cezaevi, İnceburun), Kastamonu, Çorum (Hattuşaş), Tokat.`,
+
+    "doğu anadolu": `Doğu Anadolu Bölgesi Seyahat Rehberi:
+- Erzurum: Çifte Minareli Medrese, Palandöken, Tortum Şelalesi. Cağ kebabı ve kadayıf dolması meşhurdur.
+- Kars: Ani Harabeleri (UNESCO), Sarıkamış, Çıldır Gölü (atlı kızak). Kars kaşarı ve kaz eti yenir.
+- Van: Van Kalesi, Akdamar Adası. Van kahvaltısı ve inci kefali efsanedir.
+- Ağrı: İshak Paşa Sarayı, Ağrı Dağı, Meteor Çukuru. Abdigor köftesi yenir.
+- Diğer: Malatya (Kayısı, Arslantepe), Elazığ (Harput Kalesi), Erzincan, Bingöl, Tunceli (Munzur Vadisi), Muş, Bitlis (Nemrut Krateri, Ahlat), Şırnak, Hakkari, Iğdır, Ardahan.`,
+    "erzurum": `Doğu Anadolu Bölgesi Seyahat Rehberi:
+- Erzurum: Çifte Minareli Medrese, Palandöken, Tortum Şelalesi. Cağ kebabı ve kadayıf dolması meşhurdur.
+- Kars: Ani Harabeleri (UNESCO), Sarıkamış, Çıldır Gölü (atlı kızak). Kars kaşarı ve kaz eti yenir.
+- Van: Van Kalesi, Akdamar Adası. Van kahvaltısı ve inci kefali efsanedir.
+- Ağrı: İshak Paşa Sarayı, Ağrı Dağı, Meteor Çukuru. Abdigor köftesi yenir.
+- Diğer: Malatya (Kayısı, Arslantepe), Elazığ (Harput Kalesi), Erzincan, Bingöl, Tunceli (Munzur Vadisi), Muş, Bitlis (Nemrut Krateri, Ahlat), Şırnak, Hakkari, Iğdır, Ardahan.`,
+    "kars": `Doğu Anadolu Bölgesi Seyahat Rehberi:
+- Erzurum: Çifte Minareli Medrese, Palandöken, Tortum Şelalesi. Cağ kebabı ve kadayıf dolması meşhurdur.
+- Kars: Ani Harabeleri (UNESCO), Sarıkamış, Çıldır Gölü (atlı kızak). Kars kaşarı ve kaz eti yenir.
+- Van: Van Kalesi, Akdamar Adası. Van kahvaltısı ve inci kefali efsanedir.
+- Ağrı: İshak Paşa Sarayı, Ağrı Dağı, Meteor Çukuru. Abdigor köftesi yenir.
+- Diğer: Malatya (Kayısı, Arslantepe), Elazığ (Harput Kalesi), Erzincan, Bingöl, Tunceli (Munzur Vadisi), Muş, Bitlis (Nemrut Krateri, Ahlat), Şırnak, Hakkari, Iğdır, Ardahan.`,
+    "van": `Doğu Anadolu Bölgesi Seyahat Rehberi:
+- Erzurum: Çifte Minareli Medrese, Palandöken, Tortum Şelalesi. Cağ kebabı ve kadayıf dolması meşhurdur.
+- Kars: Ani Harabeleri (UNESCO), Sarıkamış, Çıldır Gölü (atlı kızak). Kars kaşarı ve kaz eti yenir.
+- Van: Van Kalesi, Akdamar Adası. Van kahvaltısı ve inci kefali efsanedir.
+- Ağrı: İshak Paşa Sarayı, Ağrı Dağı, Meteor Çukuru. Abdigor köftesi yenir.
+- Diğer: Malatya (Kayısı, Arslantepe), Elazığ (Harput Kalesi), Erzincan, Bingöl, Tunceli (Munzur Vadisi), Muş, Bitlis (Nemrut Krateri, Ahlat), Şırnak, Hakkari, Iğdır, Ardahan.`,
+
+    "güneydoğu": `Güneydoğu Anadolu Bölgesi Seyahat Rehberi:
+- Gaziantep: Zeugma Mozaik Müzesi, Bakırcılar Çarşısı, Halfeti. Gastronomi başkentidir; baklava, beyran, katmer ve lahmacun efsanedir.
+- Şanlıurfa: Balıklıgöl, Göbeklitepe (dünyanın en eski tapınağı), Harran evleri. Urfa kebabı ve çiğ köfte meşhurdur.
+- Mardin: Mardin taş evleri, Deyrulzafaran Manastırı, Midyat. Kaburga dolması ve Süryani şarabı bilinir.
+- Diyarbakır: Diyarbakır Surları, Ulu Camii, Hasan Paşa Hanı. Ciğer tava ve burma kadayıf yenir.
+- Diğer: Adıyaman (Nemrut Dağı), Batman (Hasankeyf), Siirt (Bıttım, büryan kebabı).`,
+    "gaziantep": `Güneydoğu Anadolu Bölgesi Seyahat Rehberi:
+- Gaziantep: Zeugma Mozaik Müzesi, Bakırcılar Çarşısı, Halfeti. Gastronomi başkentidir; baklava, beyran, katmer ve lahmacun efsanedir.
+- Şanlıurfa: Balıklıgöl, Göbeklitepe (dünyanın en eski tapınağı), Harran evleri. Urfa kebabı ve çiğ köfte meşhurdur.
+- Mardin: Mardin taş evleri, Deyrulzafaran Manastırı, Midyat. Kaburga dolması ve Süryani şarabı bilinir.
+- Diyarbakır: Diyarbakır Surları, Ulu Camii, Hasan Paşa Hanı. Ciğer tava ve burma kadayıf yenir.
+- Diğer: Adıyaman (Nemrut Dağı), Batman (Hasankeyf), Siirt (Bıttım, büryan kebabı).`,
+    "şanlıurfa": `Güneydoğu Anadolu Bölgesi Seyahat Rehberi:
+- Gaziantep: Zeugma Mozaik Müzesi, Bakırcılar Çarşısı, Halfeti. Gastronomi başkentidir; baklava, beyran, katmer ve lahmacun efsanedir.
+- Şanlıurfa: Balıklıgöl, Göbeklitepe (dünyanın en eski tapınağı), Harran evleri. Urfa kebabı ve çiğ köfte meşhurdur.
+- Mardin: Mardin taş evleri, Deyrulzafaran Manastırı, Midyat. Kaburga dolması ve Süryani şarabı bilinir.
+- Diyarbakır: Diyarbakır Surları, Ulu Camii, Hasan Paşa Hanı. Ciğer tava ve burma kadayıf yenir.
+- Diğer: Adıyaman (Nemrut Dağı), Batman (Hasankeyf), Siirt (Bıttım, büryan kebabı).`,
+    "urfa": `Güneydoğu Anadolu Bölgesi Seyahat Rehberi:
+- Gaziantep: Zeugma Mozaik Müzesi, Bakırcılar Çarşısı, Halfeti. Gastronomi başkentidir; baklava, beyran, katmer ve lahmacun efsanedir.
+- Şanlıurfa: Balıklıgöl, Göbeklitepe (dünyanın en eski tapınağı), Harran evleri. Urfa kebabı ve çiğ köfte meşhurdur.
+- Mardin: Mardin taş evleri, Deyrulzafaran Manastırı, Midyat. Kaburga dolması ve Süryani şarabı bilinir.
+- Diyarbakır: Diyarbakır Surları, Ulu Camii, Hasan Paşa Hanı. Ciğer tava ve burma kadayıf yenir.
+- Diğer: Adıyaman (Nemrut Dağı), Batman (Hasankeyf), Siirt (Bıttım, büryan kebabı).`,
+    "mardin": `Güneydoğu Anadolu Bölgesi Seyahat Rehberi:
+- Gaziantep: Zeugma Mozaik Müzesi, Bakırcılar Çarşısı, Halfeti. Gastronomi başkentidir; baklava, beyran, katmer ve lahmacun efsanedir.
+- Şanlıurfa: Balıklıgöl, Göbeklitepe (dünyanın en eski tapınağı), Harran evleri. Urfa kebabı ve çiğ köfte meşhurdur.
+- Mardin: Mardin taş evleri, Deyrulzafaran Manastırı, Midyat. Kaburga dolması ve Süryani şarabı bilinir.
+- Diyarbakır: Diyarbakır Surları, Ulu Camii, Hasan Paşa Hanı. Ciğer tava ve burma kadayıf yenir.
+- Diğer: Adıyaman (Nemrut Dağı), Batman (Hasankeyf), Siirt (Bıttım, büryan kebabı).`,
+
+    // -----------------------------------------
+    // 2. TEKNOLOJİ (TELEFONLAR)
+    // -----------------------------------------
+    "apple": `iPhone Modelleri ve Özellikleri:
+(Güncel fiyatlar için resmi kaynaklara bakınız).
+- iPhone 15 Pro Max: 6.7 inç Super Retina XDR OLED (120Hz), A17 Pro (3nm) işlemci, 48MP ana kamera, 5x optik zoom destekli tetraprizma, titanyum kasa, Type-C.
+- iPhone 15 Pro: 6.1 inç ekran, 3x optik zoom, A17 Pro çip.
+- iPhone 15 / 15 Plus: A16 Bionic işlemci, 48MP ana kamera, 60Hz ekran, alüminyum kasa.`,
+    "iphone": `iPhone Modelleri ve Özellikleri:
+(Güncel fiyatlar için resmi kaynaklara bakınız).
+- iPhone 15 Pro Max: 6.7 inç Super Retina XDR OLED (120Hz), A17 Pro (3nm) işlemci, 48MP ana kamera, 5x optik zoom destekli tetraprizma, titanyum kasa, Type-C.
+- iPhone 15 Pro: 6.1 inç ekran, 3x optik zoom, A17 Pro çip.
+- iPhone 15 / 15 Plus: A16 Bionic işlemci, 48MP ana kamera, 60Hz ekran, alüminyum kasa.`,
+    "ios": `iPhone Modelleri ve Özellikleri:
+(Güncel fiyatlar için resmi kaynaklara bakınız).
+- iPhone 15 Pro Max: 6.7 inç Super Retina XDR OLED (120Hz), A17 Pro (3nm) işlemci, 48MP ana kamera, 5x optik zoom destekli tetraprizma, titanyum kasa, Type-C.
+- iPhone 15 Pro: 6.1 inç ekran, 3x optik zoom, A17 Pro çip.
+- iPhone 15 / 15 Plus: A16 Bionic işlemci, 48MP ana kamera, 60Hz ekran, alüminyum kasa.`,
+
+    "samsung": `Samsung Galaxy Modelleri ve Özellikleri:
+(Güncel fiyatlar için resmi kaynaklara bakınız).
+- Galaxy S24 Ultra: 6.8 inç QHD+ ekran, Snapdragon 8 Gen 3 for Galaxy, 200MP ana kamera, 100x Space Zoom, Titanyum çerçeve, entegre S Pen ve Galaxy AI yapay zeka özellikleri.
+- Galaxy S24+ / S24: Daha kompakt ekranlar, 50MP ana kamera sistemi.
+- Galaxy Z Fold 5: 7.6 inç iç katlanabilir ekran, Snapdragon 8 Gen 2.
+- Galaxy Z Flip 5: Katlanabilir kompakt tasarım, kapak ekranı.
+- Galaxy A Serisi: Orta segment fiyat/performans cihazları (A55, A35 vb.).`,
+    "galaxy": `Samsung Galaxy Modelleri ve Özellikleri:
+(Güncel fiyatlar için resmi kaynaklara bakınız).
+- Galaxy S24 Ultra: 6.8 inç QHD+ ekran, Snapdragon 8 Gen 3 for Galaxy, 200MP ana kamera, 100x Space Zoom, Titanyum çerçeve, entegre S Pen ve Galaxy AI yapay zeka özellikleri.
+- Galaxy S24+ / S24: Daha kompakt ekranlar, 50MP ana kamera sistemi.
+- Galaxy Z Fold 5: 7.6 inç iç katlanabilir ekran, Snapdragon 8 Gen 2.
+- Galaxy Z Flip 5: Katlanabilir kompakt tasarım, kapak ekranı.
+- Galaxy A Serisi: Orta segment fiyat/performans cihazları (A55, A35 vb.).`,
+    "android telefon": `Samsung Galaxy Modelleri ve Özellikleri:
+(Güncel fiyatlar için resmi kaynaklara bakınız).
+- Galaxy S24 Ultra: 6.8 inç QHD+ ekran, Snapdragon 8 Gen 3 for Galaxy, 200MP ana kamera, 100x Space Zoom, Titanyum çerçeve, entegre S Pen ve Galaxy AI yapay zeka özellikleri.
+- Galaxy S24+ / S24: Daha kompakt ekranlar, 50MP ana kamera sistemi.
+- Galaxy Z Fold 5: 7.6 inç iç katlanabilir ekran, Snapdragon 8 Gen 2.
+- Galaxy Z Flip 5: Katlanabilir kompakt tasarım, kapak ekranı.
+- Galaxy A Serisi: Orta segment fiyat/performans cihazları (A55, A35 vb.).`,
+
+    "xiaomi": `Xiaomi ve POCO Modelleri:
+(Güncel fiyatlar için resmi kaynaklara bakınız).
+- Xiaomi 14 Ultra: Leica işbirliği, 6.73 inç 2K ekran, Snapdragon 8 Gen 3, 50MP Sony LYT-900 1 inç sensörlü 4'lü kamera sistemi.
+- Xiaomi 14 / 14 Pro: Snapdragon 8 Gen 3 işlemci, Leica kameralar.
+- Redmi Note 13 Serisi: 200MP'ye varan kameralar, hızlı şarj özellikli orta segment.
+- POCO F6 / X6 Serisi: Oyun odaklı fiyat/performans cihazları.`,
+    "redmi": `Xiaomi ve POCO Modelleri:
+(Güncel fiyatlar için resmi kaynaklara bakınız).
+- Xiaomi 14 Ultra: Leica işbirliği, 6.73 inç 2K ekran, Snapdragon 8 Gen 3, 50MP Sony LYT-900 1 inç sensörlü 4'lü kamera sistemi.
+- Xiaomi 14 / 14 Pro: Snapdragon 8 Gen 3 işlemci, Leica kameralar.
+- Redmi Note 13 Serisi: 200MP'ye varan kameralar, hızlı şarj özellikli orta segment.
+- POCO F6 / X6 Serisi: Oyun odaklı fiyat/performans cihazları.`,
+    "poco": `Xiaomi ve POCO Modelleri:
+(Güncel fiyatlar için resmi kaynaklara bakınız).
+- Xiaomi 14 Ultra: Leica işbirliği, 6.73 inç 2K ekran, Snapdragon 8 Gen 3, 50MP Sony LYT-900 1 inç sensörlü 4'lü kamera sistemi.
+- Xiaomi 14 / 14 Pro: Snapdragon 8 Gen 3 işlemci, Leica kameralar.
+- Redmi Note 13 Serisi: 200MP'ye varan kameralar, hızlı şarj özellikli orta segment.
+- POCO F6 / X6 Serisi: Oyun odaklı fiyat/performans cihazları.`,
+
+    "diğer telefonlar": `Diğer Amiral Gemisi Telefonlar:
+(Güncel fiyatlar için resmi kaynaklara bakınız).
+- Google Pixel 8 Pro: Tensor G3 çip, 7 yıl güncelleme garantisi, Magic Editor ve Gemini AI gibi üstün yapay zeka yazılımları.
+- OPPO Find X7 Ultra: Hasselblad kameralar, çift periskop lens.
+- Honor Magic6 Pro: 180MP periskop kamera, değişken diyafram.
+- OnePlus 12 & realme GT 5 Pro: Snapdragon 8 Gen 3 işlemcili üst düzey cihazlar.`,
+    "telefon öner": `Diğer Amiral Gemisi Telefonlar:
+(Güncel fiyatlar için resmi kaynaklara bakınız).
+- Google Pixel 8 Pro: Tensor G3 çip, 7 yıl güncelleme garantisi, Magic Editor ve Gemini AI gibi üstün yapay zeka yazılımları.
+- OPPO Find X7 Ultra: Hasselblad kameralar, çift periskop lens.
+- Honor Magic6 Pro: 180MP periskop kamera, değişken diyafram.
+- OnePlus 12 & realme GT 5 Pro: Snapdragon 8 Gen 3 işlemcili üst düzey cihazlar.`,
+    "pixel": `Diğer Amiral Gemisi Telefonlar:
+(Güncel fiyatlar için resmi kaynaklara bakınız).
+- Google Pixel 8 Pro: Tensor G3 çip, 7 yıl güncelleme garantisi, Magic Editor ve Gemini AI gibi üstün yapay zeka yazılımları.
+- OPPO Find X7 Ultra: Hasselblad kameralar, çift periskop lens.
+- Honor Magic6 Pro: 180MP periskop kamera, değişken diyafram.
+- OnePlus 12 & realme GT 5 Pro: Snapdragon 8 Gen 3 işlemcili üst düzey cihazlar.`,
+    "honor": `Diğer Amiral Gemisi Telefonlar:
+(Güncel fiyatlar için resmi kaynaklara bakınız).
+- Google Pixel 8 Pro: Tensor G3 çip, 7 yıl güncelleme garantisi, Magic Editor ve Gemini AI gibi üstün yapay zeka yazılımları.
+- OPPO Find X7 Ultra: Hasselblad kameralar, çift periskop lens.
+- Honor Magic6 Pro: 180MP periskop kamera, değişken diyafram.
+- OnePlus 12 & realme GT 5 Pro: Snapdragon 8 Gen 3 işlemcili üst düzey cihazlar.`,
+
+    // -----------------------------------------
+    // 2. TEKNOLOJİ (BİLGİSAYARLAR)
+    // -----------------------------------------
+    "laptop": `Dizüstü Bilgisayar (Laptop) Rehberi:
+(Güncel fiyatlar için resmi kaynaklara bakınız).
+- Apple MacBook: M3, M3 Pro ve M3 Max çipli 14" ve 16" Pro modelleri, yüksek pil ömrü ve Liquid Retina XDR ekran sunar. M3 Air modelleri fanız tasarımdır.
+- Windows Laptoplar: Dell XPS (InfinityEdge), Lenovo ThinkPad X1 Carbon (ultra hafif, kurumsal), HP Spectre x360 (2'si 1 arada).
+- Oyun Laptopları: ASUS ROG Zephyrus G14, MSI Stealth 16, Acer Predator, Lenovo Legion serileri. RTX 4060'tan RTX 4090'a kadar ekran kartı seçenekleri sunarlar.`,
+    "dizüstü": `Dizüstü Bilgisayar (Laptop) Rehberi:
+(Güncel fiyatlar için resmi kaynaklara bakınız).
+- Apple MacBook: M3, M3 Pro ve M3 Max çipli 14" ve 16" Pro modelleri, yüksek pil ömrü ve Liquid Retina XDR ekran sunar. M3 Air modelleri fanız tasarımdır.
+- Windows Laptoplar: Dell XPS (InfinityEdge), Lenovo ThinkPad X1 Carbon (ultra hafif, kurumsal), HP Spectre x360 (2'si 1 arada).
+- Oyun Laptopları: ASUS ROG Zephyrus G14, MSI Stealth 16, Acer Predator, Lenovo Legion serileri. RTX 4060'tan RTX 4090'a kadar ekran kartı seçenekleri sunarlar.`,
+    "macbook": `Dizüstü Bilgisayar (Laptop) Rehberi:
+(Güncel fiyatlar için resmi kaynaklara bakınız).
+- Apple MacBook: M3, M3 Pro ve M3 Max çipli 14" ve 16" Pro modelleri, yüksek pil ömrü ve Liquid Retina XDR ekran sunar. M3 Air modelleri fanız tasarımdır.
+- Windows Laptoplar: Dell XPS (InfinityEdge), Lenovo ThinkPad X1 Carbon (ultra hafif, kurumsal), HP Spectre x360 (2'si 1 arada).
+- Oyun Laptopları: ASUS ROG Zephyrus G14, MSI Stealth 16, Acer Predator, Lenovo Legion serileri. RTX 4060'tan RTX 4090'a kadar ekran kartı seçenekleri sunarlar.`,
+
+    "masaüstü": `Masaüstü Sistem Bileşenleri:
+(Güncel fiyatlar için resmi kaynaklara bakınız).
+- İşlemci (CPU): Oyun için AMD Ryzen 7 7800X3D ve 9 7950X3D öne çıkar. Intel tarafında Core i9-14900K, i7-14700K serileri çok güçlüdür.
+- Ekran Kartı (GPU): Zirvede NVIDIA RTX 4090 ve 4080 Super bulunur. Fiyat/Performans için RTX 4070 veya AMD RX 7800 XT tercih edilebilir.
+- Diğer: NVMe Gen4 SSD'ler (Samsung 990 Pro), DDR5 RAM'ler ve sıvı soğutma (AIO) sistemleri üst düzey sistemlerin vazgeçilmezidir.`,
+    "pc": `Masaüstü Sistem Bileşenleri:
+(Güncel fiyatlar için resmi kaynaklara bakınız).
+- İşlemci (CPU): Oyun için AMD Ryzen 7 7800X3D ve 9 7950X3D öne çıkar. Intel tarafında Core i9-14900K, i7-14700K serileri çok güçlüdür.
+- Ekran Kartı (GPU): Zirvede NVIDIA RTX 4090 ve 4080 Super bulunur. Fiyat/Performans için RTX 4070 veya AMD RX 7800 XT tercih edilebilir.
+- Diğer: NVMe Gen4 SSD'ler (Samsung 990 Pro), DDR5 RAM'ler ve sıvı soğutma (AIO) sistemleri üst düzey sistemlerin vazgeçilmezidir.`,
+    "kasa": `Masaüstü Sistem Bileşenleri:
+(Güncel fiyatlar için resmi kaynaklara bakınız).
+- İşlemci (CPU): Oyun için AMD Ryzen 7 7800X3D ve 9 7950X3D öne çıkar. Intel tarafında Core i9-14900K, i7-14700K serileri çok güçlüdür.
+- Ekran Kartı (GPU): Zirvede NVIDIA RTX 4090 ve 4080 Super bulunur. Fiyat/Performans için RTX 4070 veya AMD RX 7800 XT tercih edilebilir.
+- Diğer: NVMe Gen4 SSD'ler (Samsung 990 Pro), DDR5 RAM'ler ve sıvı soğutma (AIO) sistemleri üst düzey sistemlerin vazgeçilmezidir.`,
+    "ekran kartı": `Masaüstü Sistem Bileşenleri:
+(Güncel fiyatlar için resmi kaynaklara bakınız).
+- İşlemci (CPU): Oyun için AMD Ryzen 7 7800X3D ve 9 7950X3D öne çıkar. Intel tarafında Core i9-14900K, i7-14700K serileri çok güçlüdür.
+- Ekran Kartı (GPU): Zirvede NVIDIA RTX 4090 ve 4080 Super bulunur. Fiyat/Performans için RTX 4070 veya AMD RX 7800 XT tercih edilebilir.
+- Diğer: NVMe Gen4 SSD'ler (Samsung 990 Pro), DDR5 RAM'ler ve sıvı soğutma (AIO) sistemleri üst düzey sistemlerin vazgeçilmezidir.`,
+    "rtx": `Masaüstü Sistem Bileşenleri:
+(Güncel fiyatlar için resmi kaynaklara bakınız).
+- İşlemci (CPU): Oyun için AMD Ryzen 7 7800X3D ve 9 7950X3D öne çıkar. Intel tarafında Core i9-14900K, i7-14700K serileri çok güçlüdür.
+- Ekran Kartı (GPU): Zirvede NVIDIA RTX 4090 ve 4080 Super bulunur. Fiyat/Performans için RTX 4070 veya AMD RX 7800 XT tercih edilebilir.
+- Diğer: NVMe Gen4 SSD'ler (Samsung 990 Pro), DDR5 RAM'ler ve sıvı soğutma (AIO) sistemleri üst düzey sistemlerin vazgeçilmezidir.`,
+
+    // -----------------------------------------
+    // 2. TEKNOLOJİ (DİĞER CİHAZLAR)
+    // -----------------------------------------
+    "saat": `Akıllı Saat Modelleri:
+(Güncel fiyatlar için resmi kaynaklara bakınız).
+- Apple Watch: Series 9 (çift dokunma, EKG) ve Ultra 2 (Dalışa uygun, 3000 nit parlaklık, Action Button).
+- Samsung Galaxy Watch: Watch6 Classic (döner çerçeve, BIA sensörü).
+- Garmin: Fenix 7X Solar (güneş enerjili 37 gün pil, profesyonel spor), Forerunner 965.
+- Diğer: Huawei Watch GT 4, Xiaomi Watch 2 Pro.`,
+    "akıllı saat": `Akıllı Saat Modelleri:
+(Güncel fiyatlar için resmi kaynaklara bakınız).
+- Apple Watch: Series 9 (çift dokunma, EKG) ve Ultra 2 (Dalışa uygun, 3000 nit parlaklık, Action Button).
+- Samsung Galaxy Watch: Watch6 Classic (döner çerçeve, BIA sensörü).
+- Garmin: Fenix 7X Solar (güneş enerjili 37 gün pil, profesyonel spor), Forerunner 965.
+- Diğer: Huawei Watch GT 4, Xiaomi Watch 2 Pro.`,
+    "watch": `Akıllı Saat Modelleri:
+(Güncel fiyatlar için resmi kaynaklara bakınız).
+- Apple Watch: Series 9 (çift dokunma, EKG) ve Ultra 2 (Dalışa uygun, 3000 nit parlaklık, Action Button).
+- Samsung Galaxy Watch: Watch6 Classic (döner çerçeve, BIA sensörü).
+- Garmin: Fenix 7X Solar (güneş enerjili 37 gün pil, profesyonel spor), Forerunner 965.
+- Diğer: Huawei Watch GT 4, Xiaomi Watch 2 Pro.`,
+
+    "tablet": `Tablet Modelleri:
+(Güncel fiyatlar için resmi kaynaklara bakınız).
+- Apple iPad: M4 çipli iPad Pro (Tandem OLED ekran), M2 çipli iPad Air, 10. Nesil iPad ve iPad Mini 6.
+- Samsung Galaxy Tab: Tab S9 Ultra (14.6 inç devasa ekran, suya dayanıklı, entegre S Pen), S9 FE.
+- Xiaomi: Xiaomi Pad 6S Pro ve Pad 6 serisi.`,
+    "ipad": `Tablet Modelleri:
+(Güncel fiyatlar için resmi kaynaklara bakınız).
+- Apple iPad: M4 çipli iPad Pro (Tandem OLED ekran), M2 çipli iPad Air, 10. Nesil iPad ve iPad Mini 6.
+- Samsung Galaxy Tab: Tab S9 Ultra (14.6 inç devasa ekran, suya dayanıklı, entegre S Pen), S9 FE.
+- Xiaomi: Xiaomi Pad 6S Pro ve Pad 6 serisi.`,
+
+    "kulaklık": `Kablosuz Kulaklık (TWS) Modelleri:
+(Güncel fiyatlar için resmi kaynaklara bakınız).
+- Apple: AirPods Pro 2 (Güçlü ANC, Spatial Audio, USB-C) ve AirPods Max (Kafa üstü).
+- Sony: WF-1000XM5 (Sektörün en iyi gürültü engellemesi, Hi-Res).
+- Samsung: Galaxy Buds3 Pro (Yapay zeka çeviri desteği).
+- Diğer: Bose QuietComfort Ultra, Sennheiser Momentum 4, Jabra Elite 10, Nothing Ear (2).`,
+    "airpods": `Kablosuz Kulaklık (TWS) Modelleri:
+(Güncel fiyatlar için resmi kaynaklara bakınız).
+- Apple: AirPods Pro 2 (Güçlü ANC, Spatial Audio, USB-C) ve AirPods Max (Kafa üstü).
+- Sony: WF-1000XM5 (Sektörün en iyi gürültü engellemesi, Hi-Res).
+- Samsung: Galaxy Buds3 Pro (Yapay zeka çeviri desteği).
+- Diğer: Bose QuietComfort Ultra, Sennheiser Momentum 4, Jabra Elite 10, Nothing Ear (2).`,
+
+    "konsol": `Oyun Konsolları ve El Konsolları:
+(Güncel fiyatlar için resmi kaynaklara bakınız).
+- PlayStation 5: Haptic feedback özellikli DualSense, hızlı SSD.
+- Xbox Series X/S: Game Pass ekosistemi, 12 TFLOPS güç (Series X).
+- Nintendo Switch OLED: Taşınabilir aile konsolu.
+- PC El Konsolları: Steam Deck OLED, ASUS ROG Ally X.`,
+    "playstation": `Oyun Konsolları ve El Konsolları:
+(Güncel fiyatlar için resmi kaynaklara bakınız).
+- PlayStation 5: Haptic feedback özellikli DualSense, hızlı SSD.
+- Xbox Series X/S: Game Pass ekosistemi, 12 TFLOPS güç (Series X).
+- Nintendo Switch OLED: Taşınabilir aile konsolu.
+- PC El Konsolları: Steam Deck OLED, ASUS ROG Ally X.`,
+    "ps5": `Oyun Konsolları ve El Konsolları:
+(Güncel fiyatlar için resmi kaynaklara bakınız).
+- PlayStation 5: Haptic feedback özellikli DualSense, hızlı SSD.
+- Xbox Series X/S: Game Pass ekosistemi, 12 TFLOPS güç (Series X).
+- Nintendo Switch OLED: Taşınabilir aile konsolu.
+- PC El Konsolları: Steam Deck OLED, ASUS ROG Ally X.`,
+    "xbox": `Oyun Konsolları ve El Konsolları:
+(Güncel fiyatlar için resmi kaynaklara bakınız).
+- PlayStation 5: Haptic feedback özellikli DualSense, hızlı SSD.
+- Xbox Series X/S: Game Pass ekosistemi, 12 TFLOPS güç (Series X).
+- Nintendo Switch OLED: Taşınabilir aile konsolu.
+- PC El Konsolları: Steam Deck OLED, ASUS ROG Ally X.`,
+
+    "kamera": `Kamera ve Drone Modelleri:
+(Güncel fiyatlar için resmi kaynaklara bakınız).
+- Aynasız Kameralar: Sony A7R V (61MP), Sony A7S III (Video odaklı), Canon EOS R5, Nikon Z8, Fujifilm X-T5.
+- Dronelar: DJI Mavic 3 Pro (3 kameralı), DJI Air 3, DJI Mini 4 Pro (Kayıt gerektirmez), DJI Avata 2 (FPV).
+- Aksiyon Kameraları: GoPro Hero 12 Black, DJI Osmo Action 4, Insta360 X4.`,
+    "drone": `Kamera ve Drone Modelleri:
+(Güncel fiyatlar için resmi kaynaklara bakınız).
+- Aynasız Kameralar: Sony A7R V (61MP), Sony A7S III (Video odaklı), Canon EOS R5, Nikon Z8, Fujifilm X-T5.
+- Dronelar: DJI Mavic 3 Pro (3 kameralı), DJI Air 3, DJI Mini 4 Pro (Kayıt gerektirmez), DJI Avata 2 (FPV).
+- Aksiyon Kameraları: GoPro Hero 12 Black, DJI Osmo Action 4, Insta360 X4.`,
+    "gopro": `Kamera ve Drone Modelleri:
+(Güncel fiyatlar için resmi kaynaklara bakınız).
+- Aynasız Kameralar: Sony A7R V (61MP), Sony A7S III (Video odaklı), Canon EOS R5, Nikon Z8, Fujifilm X-T5.
+- Dronelar: DJI Mavic 3 Pro (3 kameralı), DJI Air 3, DJI Mini 4 Pro (Kayıt gerektirmez), DJI Avata 2 (FPV).
+- Aksiyon Kameraları: GoPro Hero 12 Black, DJI Osmo Action 4, Insta360 X4.`,
+
+    // -----------------------------------------
+    // 3. SOSYAL MEDYA STRATEJİLERİ
+    // -----------------------------------------
+    "hedef kitle": `Sosyal Medya Hedef Kitle ve Persona Oluşturma:
+- Demografik Analiz: Yaş aralığı, cinsiyet, konum, gelir ve eğitim seviyesi içerik dilini belirler.
+- Psikografik Analiz: İlgi alanları, değerler (örn. çevre bilinci), yaşam tarzı ve davranış alışkanlıklarına odaklanın.
+- İçerik Pillarları: Eğitici, Eğlenceli/Viral, Hikaye Anlatımı (Kamera arkası), Etkileşimli (anketler) ve Dönüşüm (Satış/CTA) odaklı olmak üzere 5 ana tema belirleyin.`,
+    "persona": `Sosyal Medya Hedef Kitle ve Persona Oluşturma:
+- Demografik Analiz: Yaş aralığı, cinsiyet, konum, gelir ve eğitim seviyesi içerik dilini belirler.
+- Psikografik Analiz: İlgi alanları, değerler (örn. çevre bilinci), yaşam tarzı ve davranış alışkanlıklarına odaklanın.
+- İçerik Pillarları: Eğitici, Eğlenceli/Viral, Hikaye Anlatımı (Kamera arkası), Etkileşimli (anketler) ve Dönüşüm (Satış/CTA) odaklı olmak üzere 5 ana tema belirleyin.`,
+
+    "instagram": `Instagram Büyüme ve Algoritma Stratejisi:
+- Algoritma Öncelikleri: Dwell time (kalma süresi), DM Paylaşımları (en değerli etkileşim), Kaydetmeler ve Yorumlar.
+- Reels Taktikleri: 15-30 saniye sürsün. "3-2-1 Formülü" (3 sn hook, 2 sn problem, kalan süre çözüm) kullan. Kullanıcıların %85'i sessiz izlediği için altyazı zorunludur.
+- Carousel (Kaydırmalı): İlk slayt metin yoğun ve dikkat çekici, son slayt ise CTA (Kaydet) olmalı.
+- Hikayeler: Her 3-4 hikayede bir anket veya soru-cevap etiketi kullan.
+- Biyografi: "Niş | Değer Önerisi | Sosyal Kanıt | CTA" formülüne göre optimize et.`,
+    "reels": `Instagram Büyüme ve Algoritma Stratejisi:
+- Algoritma Öncelikleri: Dwell time (kalma süresi), DM Paylaşımları (en değerli etkileşim), Kaydetmeler ve Yorumlar.
+- Reels Taktikleri: 15-30 saniye sürsün. "3-2-1 Formülü" (3 sn hook, 2 sn problem, kalan süre çözüm) kullan. Kullanıcıların %85'i sessiz izlediği için altyazı zorunludur.
+- Carousel (Kaydırmalı): İlk slayt metin yoğun ve dikkat çekici, son slayt ise CTA (Kaydet) olmalı.
+- Hikayeler: Her 3-4 hikayede bir anket veya soru-cevap etiketi kullan.
+- Biyografi: "Niş | Değer Önerisi | Sosyal Kanıt | CTA" formülüne göre optimize et.`,
+
+    "tiktok": `TikTok Büyüme ve FYP (Sana Özel) Stratejisi:
+- Algoritma Önceliği: İzlenme süresi (Videoyu %100 izletmek) ve Tamamlanma oranı en kritik faktördür. Ardından Tekrar izlenme, Paylaşımlar ve Yorumlar gelir.
+- Hook (Kanca): İlk 1 saniyede "Pattern Interrupt" (Desen bozma) tekniği ile dikkat çek, görsel şok veya merak uyandıran metinler kullan.
+- SEO: Görünen adını "İsim | Niş" olarak ayarla.
+- Trendler: TikTok Creative Center üzerinden trend müzik ve sesleri takip et.`,
+    "fyp": `TikTok Büyüme ve FYP (Sana Özel) Stratejisi:
+- Algoritma Önceliği: İzlenme süresi (Videoyu %100 izletmek) ve Tamamlanma oranı en kritik faktördür. Ardından Tekrar izlenme, Paylaşımlar ve Yorumlar gelir.
+- Hook (Kanca): İlk 1 saniyede "Pattern Interrupt" (Desen bozma) tekniği ile dikkat çek, görsel şok veya merak uyandıran metinler kullan.
+- SEO: Görünen adını "İsim | Niş" olarak ayarla.
+- Trendler: TikTok Creative Center üzerinden trend müzik ve sesleri takip et.`,
+    "sana özel": `TikTok Büyüme ve FYP (Sana Özel) Stratejisi:
+- Algoritma Önceliği: İzlenme süresi (Videoyu %100 izletmek) ve Tamamlanma oranı en kritik faktördür. Ardından Tekrar izlenme, Paylaşımlar ve Yorumlar gelir.
+- Hook (Kanca): İlk 1 saniyede "Pattern Interrupt" (Desen bozma) tekniği ile dikkat çek, görsel şok veya merak uyandıran metinler kullan.
+- SEO: Görünen adını "İsim | Niş" olarak ayarla.
+- Trendler: TikTok Creative Center üzerinden trend müzik ve sesleri takip et.`,
+
+    "youtube": `YouTube Algoritma ve SEO Stratejisi:
+- Kritik Metrikler: Tıklama Oranı (CTR) ve Ortalama İzlenme Süresi (AVD).
+- Thumbnail (Küçük Resim): Yüksek kontrast, yüz ifadesi ve max 3-4 kelimelik metin kullan.
+- Video Script Formülü: 0-30 saniye kanca (Şok edici bilgi), ardından problem/çözüm içeren gövde ve son 30 saniye "Abone Ol" çağrısı.
+- SEO: Açıklamanın ilk 2 satırına anahtar kelimeler yerleştir, zaman damgaları (Chapters) kullan. TubeBuddy veya VidIQ ile analiz yap.
+- Shorts: 30-50 saniye arası videolar abone kazanımı için en etkilidir.`,
+    "youtuber": `YouTube Algoritma ve SEO Stratejisi:
+- Kritik Metrikler: Tıklama Oranı (CTR) ve Ortalama İzlenme Süresi (AVD).
+- Thumbnail (Küçük Resim): Yüksek kontrast, yüz ifadesi ve max 3-4 kelimelik metin kullan.
+- Video Script Formülü: 0-30 saniye kanca (Şok edici bilgi), ardından problem/çözüm içeren gövde ve son 30 saniye "Abone Ol" çağrısı.
+- SEO: Açıklamanın ilk 2 satırına anahtar kelimeler yerleştir, zaman damgaları (Chapters) kullan. TubeBuddy veya VidIQ ile analiz yap.
+- Shorts: 30-50 saniye arası videolar abone kazanımı için en etkilidir.`,
+
+    "twitter": `Twitter/X Büyüme Stratejisi:
+- Etkileşim Sıralaması: 1. Yanıtlar, 2. Alıntı RT, 3. Yer İmi (Bookmark), 4. Retweet, 5. Beğeni.
+- Viral Thread Formülü:
+  1. Tweet: Şok edici kanca (Örn: Bu bilgiyi kimse söylemez).
+  2-8. Tweetler: Boşluklu, okunabilir, madde işaretli kısa cümleler.
+  Son Tweet: Kaydet ve takip et çağrısı.
+- Taktik: Büyük hesapların viral tweetlerine değerli yanıtlar vererek etkileşim çek.`,
+    "tweet": `Twitter/X Büyüme Stratejisi:
+- Etkileşim Sıralaması: 1. Yanıtlar, 2. Alıntı RT, 3. Yer İmi (Bookmark), 4. Retweet, 5. Beğeni.
+- Viral Thread Formülü:
+  1. Tweet: Şok edici kanca (Örn: Bu bilgiyi kimse söylemez).
+  2-8. Tweetler: Boşluklu, okunabilir, madde işaretli kısa cümleler.
+  Son Tweet: Kaydet ve takip et çağrısı.
+- Taktik: Büyük hesapların viral tweetlerine değerli yanıtlar vererek etkileşim çek.`,
+
+    "linkedin": `LinkedIn Büyüme Stratejisi:
+- Algoritma: AI filtreleri kaliteli profesyonel içeriği 2. ve 3. derece bağlantılara yayar. En değerli etkileşim anlamlı yorumlardır.
+- Biyografi: "Unvan" yerine "Değer Önerisi" yaz (Örn: Markaları Büyütüyorum).
+- Post Formülü: İlk 2 satırda kişisel hikaye/problem ile kancala, kısa paragraflar kullan, sonda topluluğa soru sor.
+- Taktik: Günde 1 gönderi paylaş ve her gün 15-30 dk başkalarının gönderilerine değerli yorumlar bırak.`,
+    "profesyonel ağ": `LinkedIn Büyüme Stratejisi:
+- Algoritma: AI filtreleri kaliteli profesyonel içeriği 2. ve 3. derece bağlantılara yayar. En değerli etkileşim anlamlı yorumlardır.
+- Biyografi: "Unvan" yerine "Değer Önerisi" yaz (Örn: Markaları Büyütüyorum).
+- Post Formülü: İlk 2 satırda kişisel hikaye/problem ile kancala, kısa paragraflar kullan, sonda topluluğa soru sor.
+- Taktik: Günde 1 gönderi paylaş ve her gün 15-30 dk başkalarının gönderilerine değerli yorumlar bırak.`,
+
+    "facebook": `Facebook ve Pinterest Büyüme Stratejisi:
+- Facebook: Gruplar topluluk oluşturmak ve yüksek organik erişim için sayfalara göre daha etkilidir. Facebook reklamlarında Lookalike Audience (Benzer kitle) hedeflemesi yap.
+- Pinterest: Uzun ömürlü ve yüksek satın alma niyeti olan içerikler barındırır. 1000x1500 boyutlarında, metin overlayli dikey pinler hazırla. Arama motoru gibi çalıştığı için Pano isimleri ve açıklamalara SEO (anahtar kelime) uygula.`,
+    "pinterest": `Facebook ve Pinterest Büyüme Stratejisi:
+- Facebook: Gruplar topluluk oluşturmak ve yüksek organik erişim için sayfalara göre daha etkilidir. Facebook reklamlarında Lookalike Audience (Benzer kitle) hedeflemesi yap.
+- Pinterest: Uzun ömürlü ve yüksek satın alma niyeti olan içerikler barındırır. 1000x1500 boyutlarında, metin overlayli dikey pinler hazırla. Arama motoru gibi çalıştığı için Pano isimleri ve açıklamalara SEO (anahtar kelime) uygula.`,
+
+    "sosyal medya araçları": `İçerik Üretimi ve Planlama Araçları:
+(Ücretsiz ve ücretli versiyonları mevcuttur, detaylar için resmi sitelere bakınız).
+- Tasarım & Video: Canva, Figma, CapCut (mobil/masaüstü), InShot.
+- Planlama & Yönetim: Later, Buffer, Metricool, Notion, Trello.
+- Analiz & SEO: Google Analytics, Social Blade, TubeBuddy, VidIQ, AnswerThePublic.`,
+    "canva": `İçerik Üretimi ve Planlama Araçları:
+(Ücretsiz ve ücretli versiyonları mevcuttur, detaylar için resmi sitelere bakınız).
+- Tasarım & Video: Canva, Figma, CapCut (mobil/masaüstü), InShot.
+- Planlama & Yönetim: Later, Buffer, Metricool, Notion, Trello.
+- Analiz & SEO: Google Analytics, Social Blade, TubeBuddy, VidIQ, AnswerThePublic.`,
+    "capcut": `İçerik Üretimi ve Planlama Araçları:
+(Ücretsiz ve ücretli versiyonları mevcuttur, detaylar için resmi sitelere bakınız).
+- Tasarım & Video: Canva, Figma, CapCut (mobil/masaüstü), InShot.
+- Planlama & Yönetim: Later, Buffer, Metricool, Notion, Trello.
+- Analiz & SEO: Google Analytics, Social Blade, TubeBuddy, VidIQ, AnswerThePublic.`,
+
+    "sosyal medya gelir": `Sosyal Medyadan Gelir Elde Etme (Monetizasyon):
+- Marka İşbirlikleri: Ürün karşılığı (Barter) veya Influencer Marketing üzerinden ücretli tanıtımlar.
+- Affiliate Marketing: Trendyol, Amazon vb. linkleri ile satış başına komisyon (#işbirliği etiketi zorunludur).
+- Dijital/Fiziksel Ürün: Online kurs, e-kitap, şablon satışı veya Dropshipping/Print-on-demand e-ticaret modelleri.
+- Reklam Geliri: YouTube AdSense, X Premium reklam payı, Facebook Ad Breaks.
+- Abonelik: Patreon, YouTube Katıl, Substack bültenleri.`,
+    "para kazanma": `Sosyal Medyadan Gelir Elde Etme (Monetizasyon):
+- Marka İşbirlikleri: Ürün karşılığı (Barter) veya Influencer Marketing üzerinden ücretli tanıtımlar.
+- Affiliate Marketing: Trendyol, Amazon vb. linkleri ile satış başına komisyon (#işbirliği etiketi zorunludur).
+- Dijital/Fiziksel Ürün: Online kurs, e-kitap, şablon satışı veya Dropshipping/Print-on-demand e-ticaret modelleri.
+- Reklam Geliri: YouTube AdSense, X Premium reklam payı, Facebook Ad Breaks.
+- Abonelik: Patreon, YouTube Katıl, Substack bültenleri.`,
+    "sponsorluk": `Sosyal Medyadan Gelir Elde Etme (Monetizasyon):
+- Marka İşbirlikleri: Ürün karşılığı (Barter) veya Influencer Marketing üzerinden ücretli tanıtımlar.
+- Affiliate Marketing: Trendyol, Amazon vb. linkleri ile satış başına komisyon (#işbirliği etiketi zorunludur).
+- Dijital/Fiziksel Ürün: Online kurs, e-kitap, şablon satışı veya Dropshipping/Print-on-demand e-ticaret modelleri.
+- Reklam Geliri: YouTube AdSense, X Premium reklam payı, Facebook Ad Breaks.
+- Abonelik: Patreon, YouTube Katıl, Substack bültenleri.`,
+
+    "sosyal medya trendleri": `2024-2025 Sosyal Medya Trendleri:
+- AI (Yapay Zeka) içerik, video (Sora) ve ses üretiminin yaygınlaşması.
+- Dikey kısa form videoların (TikTok, Reels, Shorts) dominasyonu.
+- TikTok Shop ve Instagram Shop üzerinden canlı yayında "Sosyal Ticaret".
+- "Behind-the-scenes" (Kamera arkası) şeffaf ve orijinal içeriklerin kurumsal markalardan daha fazla ilgi görmesi.
+- SEO odaklı, arama motorlarında aylarca yaşayabilen (Evergreen) içerik stratejileri.`,
+    "trendler": `2024-2025 Sosyal Medya Trendleri:
+- AI (Yapay Zeka) içerik, video (Sora) ve ses üretiminin yaygınlaşması.
+- Dikey kısa form videoların (TikTok, Reels, Shorts) dominasyonu.
+- TikTok Shop ve Instagram Shop üzerinden canlı yayında "Sosyal Ticaret".
+- "Behind-the-scenes" (Kamera arkası) şeffaf ve orijinal içeriklerin kurumsal markalardan daha fazla ilgi görmesi.
+- SEO odaklı, arama motorlarında aylarca yaşayabilen (Evergreen) içerik stratejileri.`,
+
+    // -----------------------------------------
+    // KODLAMA VE YAZILIM DİLLERİ (DETAYLI)
+    // -----------------------------------------
+    "kodlama": "Kodlama, bilgisayarlara ne yapmaları gerektiğini anlattığımız dildir. İstersen bana 'web sitesi yapmak istiyorum' de, sana nasıl bir site istediğini sorayım. Ya da doğrudan bir dil ismi söyle: HTML, CSS, JavaScript, Python, Java, C, C++, C#, Kotlin, Swift, Go, Rust, PHP, SQL, TypeScript.",
+    "yazılım": "Kodlama, bilgisayarlara ne yapmaları gerektiğini anlattığımız dildir. İstersen bana 'web sitesi yapmak istiyorum' de, sana nasıl bir site istediğini sorayım. Ya da doğrudan bir dil ismi söyle: HTML, CSS, JavaScript, Python, Java, C, C++, C#, Kotlin, Swift, Go, Rust, PHP, SQL, TypeScript.",
+    "programlama": "Kodlama, bilgisayarlara ne yapmaları gerektiğini anlattığımız dildir. İstersen bana 'web sitesi yapmak istiyorum' de, sana nasıl bir site istediğini sorayım. Ya da doğrudan bir dil ismi söyle: HTML, CSS, JavaScript, Python, Java, C, C++, C#, Kotlin, Swift, Go, Rust, PHP, SQL, TypeScript.",
+
+    "html": `HTML nedir?
+HTML, web sitesinin iskeletidir. Başlık, yazı, buton, resim, menü, form, tablo gibi öğelerin neyin nerede olduğunu HTML belirler. Tarayıcı bunu okuyup sayfayı oluşturur. Klasik anlamda bir "programlama" dili değildir, bir işaretleme (markup) dilidir. %100 ücretsiz.
+
+Daha kapsamlı bir örnek - basit bir profil sayfası:
+
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <title>Profilim</title>
+</head>
+<body>
+    <header>
+        <h1>Merhaba, ben Ayşe</h1>
+        <p>Web geliştirici adayıyım.</p>
+    </header>
+
+    <nav>
+        <a href="#hakkimda">Hakkımda</a>
+        <a href="#projeler">Projelerim</a>
+        <a href="#iletisim">İletişim</a>
+    </nav>
+
+    <section id="hakkimda">
+        <h2>Hakkımda</h2>
+        <p>HTML, CSS ve JavaScript öğreniyorum.</p>
+        <img src="foto.jpg" alt="Profil fotoğrafım" width="150">
+    </section>
+
+    <section id="projeler">
+        <h2>Projelerim</h2>
+        <ul>
+            <li>Kişisel blog</li>
+            <li>Basit hesap makinesi</li>
+        </ul>
+    </section>
+
+    <section id="iletisim">
+        <h2>İletişim</h2>
+        <form>
+            <label for="eposta">E-posta:</label>
+            <input type="email" id="eposta" name="eposta" required>
+            <button type="submit">Gönder</button>
+        </form>
+    </section>
+
+    <footer>
+        <p>&copy; 2026 Ayşe'nin Sitesi</p>
+    </footer>
+</body>
+</html>
+
+Burada <header>, <nav>, <section>, <footer> gibi "anlamsal" (semantic) etiketleri de gördün - bunlar sayfanın hangi kısmının ne işe yaradığını hem tarayıcıya hem de seni okuyan başka geliştiricilere anlatır.`,
+    "web iskeleti": "HTML'in detaylı anlatımı ve örnek kod için 'html' yazabilirsin.",
+
+    "css": `CSS nedir?
+HTML iskeletse, CSS görünüşüdür. Renk, boyut, konum, animasyon, telefon uyumluluğu (responsive), gölgeler gibi her şeyi CSS ile ayarlarsın. Ücretsiz mi? Evet.
+
+Daha kapsamlı bir örnek - flexbox ile kart düzeni ve hover efekti:
+
+/* Genel sıfırlama */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: Arial, sans-serif;
+    background-color: #f5f5f5;
+}
+
+/* Kartları yan yana, ortalanmış diz */
+.kart-alani {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+    justify-content: center;
+    padding: 24px;
+}
+
+.kart {
+    background: white;
+    border-radius: 12px;
+    padding: 20px;
+    width: 220px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    transition: transform 0.2s ease;
+}
+
+/* Fare üzerine gelince büyüsün */
+.kart:hover {
+    transform: translateY(-6px);
+}
+
+.kart h3 {
+    color: #0071E3;
+    margin-bottom: 8px;
+}
+
+/* Telefon ekranlarında kartları alt alta diz */
+@media (max-width: 600px) {
+    .kart-alani {
+        flex-direction: column;
+        align-items: center;
+    }
+}
+
+Buradaki @media kısmı "responsive tasarım" denen şeydir - ekran küçüldüğünde (telefon gibi) düzenin otomatik değişmesini sağlar.`,
+    "tasarım kodu": "CSS'in detaylı anlatımı ve örnek kod için 'css' yazabilirsin.",
+
+    "javascript": `JavaScript nedir?
+HTML: "Sayfada bir buton var." CSS: "Buton mavi." JavaScript: "Butona basılınca ne olacak?" JavaScript, sayfayı hareketlendiren, hesaplama yapan, kullanıcıyla etkileşime giren dildir. Node.js sayesinde sunucu tarafında da çalışabilir. Ücretsiz mi? Evet.
+
+Daha kapsamlı bir örnek - basit bir yapılacaklar listesi mantığı:
+
+// Veriyi bir dizi (array) olarak tutuyoruz
+let yapilacaklar = ["Markete git", "Kod çalış", "Kitap oku"];
+
+// Yeni görev ekleyen fonksiyon
+function gorevEkle(yeniGorev) {
+    yapilacaklar.push(yeniGorev);
+    console.log(yeniGorev + " eklendi.");
+}
+
+// Bir görevi tamamlandı diye listeden çıkaran fonksiyon
+function gorevTamamla(gorev) {
+    yapilacaklar = yapilacaklar.filter(function (g) {
+        return g !== gorev;
+    });
+}
+
+// Tüm görevleri sırayla ekrana yazdıran fonksiyon
+function listeyiGoster() {
+    yapilacaklar.forEach(function (gorev, index) {
+        console.log((index + 1) + ". " + gorev);
+    });
+}
+
+gorevEkle("Spor yap");
+gorevTamamla("Markete git");
+listeyiGoster();
+
+// Butona tıklanınca çalışan gerçek bir örnek (HTML içine gömülü):
+// <button onclick="selamVer()">Tıkla</button>
+function selamVer() {
+    alert("Merhaba! Butona bastın.");
+}
+
+push(), filter() ve forEach() dizilerle (array) çalışırken en çok kullanacağın fonksiyonlardandır.`,
+    "js": "JavaScript'in detaylı anlatımı ve örnek kod için 'javascript' yazabilirsin.",
+
+    "python": `Python nedir?
+Python en kolay öğrenilen popüler dillerden biridir. Yapay zeka, makine öğrenmesi, veri analizi, bot ve otomasyon yapabilirsin. Tamamen ücretsiz ve açık kaynaklıdır.
+
+Daha kapsamlı bir örnek - öğrenci not ortalaması hesaplayan program:
+
+# Öğrenci bilgilerini bir sözlükte (dictionary) tutuyoruz
+ogrenciler = {
+    "Ayşe": [85, 90, 78],
+    "Mehmet": [60, 70, 65],
+    "Zeynep": [95, 92, 98]
+}
+
+def ortalama_hesapla(notlar):
+    return sum(notlar) / len(notlar)
+
+def harf_notu(ortalama):
+    if ortalama >= 85:
+        return "AA"
+    elif ortalama >= 70:
+        return "BB"
+    elif ortalama >= 50:
+        return "CC"
+    else:
+        return "FF"
+
+# Her öğrenci için sonucu yazdır
+for isim, notlar in ogrenciler.items():
+    ort = ortalama_hesapla(notlar)
+    print(f"{isim}: Ortalama = {ort:.1f}, Harf Notu = {harf_notu(ort)}")
+
+# Basit bir sınıf (class) örneği
+class Ogrenci:
+    def __init__(self, isim, notlar):
+        self.isim = isim
+        self.notlar = notlar
+
+    def ortalamasi(self):
+        return sum(self.notlar) / len(self.notlar)
+
+ogrenci1 = Ogrenci("Can", [80, 88, 92])
+print(f"{ogrenci1.isim} ortalaması: {ogrenci1.ortalamasi():.1f}")
+
+Sözlük (dictionary), fonksiyon (def), döngü (for) ve sınıf (class) Python'da en sık kullanacağın dört temel yapı.`,
+    "yapay zeka kodu": "Python'ın detaylı anlatımı ve örnek kod için 'python' yazabilirsin.",
+
+    "c dili": `C dili nedir?
+C çok eski ama hâlâ çok önemli bir dildir. İşletim sistemleri, gömülü sistemler, mikrodenetleyiciler ve donanım alanlarında kullanılır. Sana bilgisayarın gerçekte nasıl çalıştığını (RAM, CPU, bellek, pointer) öğretir. Ücretsiz mi? Evet.
+
+Daha kapsamlı bir örnek - sayıların ortalamasını hesaplayan program:
+
+#include <stdio.h>
+
+// Bir dizinin ortalamasını hesaplayan fonksiyon
+float ortalama_hesapla(int dizi[], int boyut) {
+    int toplam = 0;
+    for (int i = 0; i < boyut; i++) {
+        toplam += dizi[i];
+    }
+    return (float)toplam / boyut;
+}
+
+int main() {
+    int notlar[] = {85, 90, 78, 92, 60};
+    int boyut = 5;
+
+    float ort = ortalama_hesapla(notlar, boyut);
+    printf("Ortalama: %.2f\\n", ort);
+
+    // Pointer (işaretçi) örneği - C'ye özgü önemli bir kavram
+    int sayi = 10;
+    int *sayiAdresi = &sayi;
+    printf("Sayının değeri: %d\\n", *sayiAdresi);
+
+    return 0;
+}
+
+Pointer (işaretçi), bir değişkenin bellekteki adresini tutar - C dilini diğer birçok dilden ayıran en önemli kavramlardan biridir.`,
+
+    "c++": `C++ nedir?
+C++ dili, C'nin nesne yönelimli (object-oriented) özelliklerle genişletilmiş halidir. Oyunlar, oyun motorları, performans gerektiren uygulamalar ve masaüstü programlarında kullanılır. Unreal Engine'in temel teknolojilerinden biridir. Ücretsiz mi? Evet.
+
+Daha kapsamlı bir örnek - basit bir sınıf (class) kullanımı:
+
+#include <iostream>
+#include <string>
+using namespace std;
+
+// Bir "Araba" sınıfı tanımlıyoruz
+class Araba {
+private:
+    string marka;
+    int hiz;
+
+public:
+    // Yapıcı fonksiyon (constructor)
+    Araba(string m) {
+        marka = m;
+        hiz = 0;
+    }
+
+    void hizlan(int miktar) {
+        hiz += miktar;
+        cout << marka << " artık " << hiz << " km/s hızında." << endl;
+    }
+
+    void frenYap() {
+        hiz = 0;
+        cout << marka << " durdu." << endl;
+    }
+};
+
+int main() {
+    Araba araba1("Tofaş");
+    araba1.hizlan(50);
+    araba1.hizlan(30);
+    araba1.frenYap();
+
+    return 0;
+}
+
+Sınıf (class), gerçek dünyadaki nesneleri (araba, kullanıcı, ürün vb.) kod içinde modellemenin temel yoludur - nesne yönelimli programlamanın (OOP) kalbidir.`,
+
+    "c#": `C# nedir?
+C# özellikle Microsoft ekosisteminde çok popülerdir. Windows uygulamaları, web, masaüstü programları ve backend alanlarında kullanılır. Unity ile oyun yapmak isteyenler için de önemlidir. Ücretsiz mi? Evet.
+
+Daha kapsamlı bir örnek - basit bir stok takip sistemi:
+
+using System;
+using System.Collections.Generic;
+
+class Urun {
+    public string Ad { get; set; }
+    public int Stok { get; set; }
+
+    public Urun(string ad, int stok) {
+        Ad = ad;
+        Stok = stok;
+    }
+
+    public void StokAzalt(int miktar) {
+        if (miktar > Stok) {
+            Console.WriteLine("Yetersiz stok: " + Ad);
+        } else {
+            Stok -= miktar;
+            Console.WriteLine(Ad + " stoktan " + miktar + " adet düşüldü. Kalan: " + Stok);
+        }
+    }
+}
+
+class Program {
+    static void Main() {
+        List<Urun> urunler = new List<Urun> {
+            new Urun("Kalem", 100),
+            new Urun("Defter", 50)
+        };
+
+        foreach (Urun u in urunler) {
+            Console.WriteLine(u.Ad + " - Stok: " + u.Stok);
+        }
+
+        urunler[0].StokAzalt(30);
+    }
+}
+
+List<Urun> gibi genel koleksiyonlar (generics), C#'ta veri gruplarıyla çalışmanın standart yoludur.`,
+
+    "java": `Java nedir?
+Java çok büyük bir ekosisteme sahip. Android uygulamaları, büyük şirket yazılımları, bankacılık sistemleri ve backend'de kullanılır. Java Virtual Machine (JVM) sayesinde farklı işletim sistemlerinde sorunsuzca çalışabilir. Ücretsiz mi? Evet.
+
+Daha kapsamlı bir örnek - basit bir banka hesabı sınıfı:
+
+import java.util.ArrayList;
+import java.util.List;
+
+class HesapIslemi {
+    String tur;
+    double miktar;
+
+    HesapIslemi(String tur, double miktar) {
+        this.tur = tur;
+        this.miktar = miktar;
+    }
+}
+
+class BankaHesabi {
+    private double bakiye;
+    private List<HesapIslemi> islemler = new ArrayList<>();
+
+    public void paraYatir(double miktar) {
+        bakiye += miktar;
+        islemler.add(new HesapIslemi("Yatırma", miktar));
+        System.out.println(miktar + " TL yatırıldı. Yeni bakiye: " + bakiye);
+    }
+
+    public void paraCek(double miktar) {
+        if (miktar > bakiye) {
+            System.out.println("Yetersiz bakiye!");
+            return;
+        }
+        bakiye -= miktar;
+        islemler.add(new HesapIslemi("Çekme", miktar));
+        System.out.println(miktar + " TL çekildi. Yeni bakiye: " + bakiye);
+    }
+}
+
+public class Main {
+    public static void main(String[] args) {
+        BankaHesabi hesap = new BankaHesabi();
+        hesap.paraYatir(1000);
+        hesap.paraCek(300);
+    }
+}
+
+Java'da her dosyanın içinde en az bir sınıf (class) bulunur ve programın başlangıç noktası her zaman main() metodudur.`,
+
+    "kotlin": `Kotlin nedir?
+Kotlin özellikle Android tarafında çok önemli; Google'ın Android için önerdiği resmi dillerden biridir. Ücretsiz mi? Evet.
+
+Daha kapsamlı bir örnek - basit bir görev yöneticisi:
+
+data class Gorev(val baslik: String, var tamamlandi: Boolean = false)
+
+fun main() {
+    val gorevler = mutableListOf(
+        Gorev("Alışveriş yap"),
+        Gorev("Kod yaz"),
+        Gorev("Spor yap")
+    )
+
+    // İkinci görevi tamamlandı olarak işaretle
+    gorevler[1].tamamlandi = true
+
+    for (gorev in gorevler) {
+        val durum = if (gorev.tamamlandi) "✔" else "◻"
+        println("$durum \${gorev.baslik}")
+    }
+
+    // "when" ifadesi - Kotlin'in switch'e benzer yapısı
+    val saat = 14
+    val zamanDilimi = when {
+        saat < 6 -> "Gece"
+        saat < 12 -> "Sabah"
+        saat < 18 -> "Öğleden sonra"
+        else -> "Akşam"
+    }
+    println("Şu an: $zamanDilimi")
+}
+
+"data class" Kotlin'e özgü çok kullanışlı bir yapıdır - basit veri tutan sınıfları tek satırda tanımlamanı sağlar.`,
+    "android kodu": "Kotlin'in detaylı anlatımı ve örnek kod için 'kotlin' yazabilirsin.",
+
+    "swift": `Swift nedir?
+Swift, Apple'ın geliştirdiği programlama dilidir. iPhone, iPad, Mac ve Apple Watch uygulamalarında kullanılır. Dil ücretsizdir.
+
+Daha kapsamlı bir örnek - basit bir alışveriş sepeti:
+
+struct Urun {
+    var ad: String
+    var fiyat: Double
+}
+
+struct Sepet {
+    var urunler: [Urun] = []
+
+    mutating func ekle(_ urun: Urun) {
+        urunler.append(urun)
+        print("\\(urun.ad) sepete eklendi.")
+    }
+
+    func toplamTutar() -> Double {
+        return urunler.reduce(0) { toplam, urun in toplam + urun.fiyat }
+    }
+}
+
+var sepetim = Sepet()
+sepetim.ekle(Urun(ad: "Kulaklık", fiyat: 450.0))
+sepetim.ekle(Urun(ad: "Şarj Kablosu", fiyat: 90.0))
+
+print("Toplam tutar: \\(sepetim.toplamTutar()) TL")
+
+// Opsiyonel (optional) değer örneği - Swift'e özgü önemli bir kavram
+var kullaniciAdi: String? = nil
+if let isim = kullaniciAdi {
+    print("Merhaba, \\(isim)")
+} else {
+    print("Kullanıcı adı girilmemiş.")
+}
+
+Opsiyoneller (String?), bir değişkenin "değeri olabilir ya da hiç olmayabilir" (nil) durumunu güvenli şekilde yönetmeni sağlar - Swift'in çökme hatalarını azaltan en önemli özelliklerinden biridir.`,
+    "ios kodu": "Swift'in detaylı anlatımı ve örnek kod için 'swift' yazabilirsin.",
+
+    "golang": `Go (Golang) nedir?
+Go, Google tarafından geliştirilen bir dildir. Sunucu, backend, cloud (bulut), network ve büyük ölçekli sistemler için kullanılır. Ücretsiz mi? Evet.
+
+Daha kapsamlı bir örnek - basit bir görev listesi ve eşzamanlılık (concurrency) fikri:
+
+package main
+
+import "fmt"
+
+type Gorev struct {
+    Baslik      string
+    Tamamlandi  bool
+}
+
+func gorevleriYazdir(gorevler []Gorev) {
+    for i, g := range gorevler {
+        durum := "◻"
+        if g.Tamamlandi {
+            durum = "✔"
+        }
+        fmt.Printf("%d. %s %s\\n", i+1, durum, g.Baslik)
+    }
+}
+
+func main() {
+    gorevler := []Gorev{
+        {"Kod yaz", false},
+        {"Test et", false},
+        {"Yayınla", false},
+    }
+
+    gorevler[0].Tamamlandi = true
+    gorevleriYazdir(gorevler)
+
+    // Go'nun ünlü özelliği: goroutine (hafif iş parçacığı)
+    kanal := make(chan string)
+    go func() {
+        kanal <- "Arka planda çalışan işlem bitti!"
+    }()
+    fmt.Println(<-kanal)
+}
+
+Goroutine'ler (go func() {...}), Go'yu eşzamanlı (concurrent) sistemler yazmak için çok popüler yapan özelliktir - çok az kod ile paralel işlem yapabilirsin.`,
+    "go dili": "Go (Golang) dilinin detaylı anlatımı ve örnek kod için 'golang' yazabilirsin.",
+
+    "rust": `Rust nedir?
+Rust daha modern bir dildir. Performans, sistem yazılımı, güvenlik (bellek güvenliği) ve blockchain alanlarında kullanılır. Ücretsiz mi? Evet.
+
+Daha kapsamlı bir örnek - basit bir envanter yönetimi:
+
+struct Urun {
+    ad: String,
+    stok: u32,
+}
+
+impl Urun {
+    fn yeni(ad: &str, stok: u32) -> Urun {
+        Urun { ad: ad.to_string(), stok }
+    }
+
+    fn stok_azalt(&mut self, miktar: u32) {
+        if miktar > self.stok {
+            println!("{} için yetersiz stok!", self.ad);
+        } else {
+            self.stok -= miktar;
+            println!("{} stoktan {} adet düşüldü. Kalan: {}", self.ad, miktar, self.stok);
+        }
+    }
+}
+
+fn main() {
+    let mut kalem = Urun::yeni("Kalem", 100);
+    kalem.stok_azalt(30);
+
+    // Rust'a özgü "ownership" (sahiplik) kavramı
+    let metin1 = String::from("merhaba");
+    let metin2 = metin1; // metin1'in sahipliği metin2'ye geçti
+    println!("{}", metin2); // Bu satır çalışır
+    // println!("{}", metin1); // Bu satır HATA verirdi çünkü metin1 artık geçersiz
+}
+
+Ownership (sahiplik) sistemi, Rust'ı bellek hatalarına karşı diğer dillerden çok daha güvenli yapan temel kavramdır - her değerin tek bir sahibi olur.`,
+
+    "php": `PHP nedir?
+PHP özellikle web sitelerinin arka tarafında (sunucu tarafı) kullanılır. WordPress, üyelik sistemleri, yönetim panelleri ve e-ticaret sistemleri PHP ile yapılır. Ücretsiz mi? Evet.
+
+Daha kapsamlı bir örnek - basit bir üyelik giriş kontrolü:
+
+<?php
+// Kullanıcı bilgilerini tutan basit bir dizi (gerçek projede veritabanı kullanılır)
+$kullanicilar = [
+    "ayse" => "sifre123",
+    "mehmet" => "guvenli456"
+];
+
+function girisYap($kullaniciAdi, $sifre, $kullanicilar) {
+    if (isset($kullanicilar[$kullaniciAdi]) && $kullanicilar[$kullaniciAdi] === $sifre) {
+        return "Hoş geldin, " . $kullaniciAdi . "!";
+    } else {
+        return "Kullanıcı adı veya şifre hatalı.";
+    }
+}
+
+echo girisYap("ayse", "sifre123", $kullanicilar);
+echo "\\n";
+echo girisYap("ayse", "yanlisSifre", $kullanicilar);
+
+// Bir formdan gelen veriyi işleme (gerçek bir web sayfasında kullanılır)
+// $kullaniciAdi = $_POST['kullaniciAdi'];
+// $sifre = $_POST['sifre'];
+?>
+
+$_POST ve $_GET, kullanıcının bir formdan gönderdiği veriyi PHP'nin nasıl yakaladığını gösterir - web sitelerinde giriş formları böyle çalışır.`,
+    "backend": "PHP'nin detaylı anlatımı ve örnek kod için 'php' yazabilirsin.",
+
+    "sql": `SQL nedir?
+SQL bir programlama dili değil, veritabanı sorgulama dilidir. Veri ekleme, silme, değiştirme ve arama yaparsın. Ücretsizdir (MySQL, PostgreSQL, SQLite gibi araçlarla kullanılır).
+
+Daha kapsamlı örnekler - bir "öğrenciler" ve "dersler" veritabanı senaryosu:
+
+-- Tablo oluşturma
+CREATE TABLE ogrenciler (
+    id INT PRIMARY KEY,
+    ad VARCHAR(50),
+    yas INT
+);
+
+-- Veri ekleme
+INSERT INTO ogrenciler (id, ad, yas) VALUES (1, 'Ayşe', 20);
+INSERT INTO ogrenciler (id, ad, yas) VALUES (2, 'Mehmet', 22);
+
+-- Tüm kayıtları getirme
+SELECT * FROM ogrenciler;
+
+-- Belirli bir şarta göre filtreleme
+SELECT ad FROM ogrenciler WHERE yas > 20;
+
+-- Veri güncelleme
+UPDATE ogrenciler SET yas = 21 WHERE ad = 'Ayşe';
+
+-- Veri silme
+DELETE FROM ogrenciler WHERE ad = 'Mehmet';
+
+-- İki tabloyu birleştirme (JOIN) örneği
+SELECT ogrenciler.ad, dersler.ders_adi
+FROM ogrenciler
+JOIN dersler ON ogrenciler.id = dersler.ogrenci_id;
+
+JOIN, iki farklı tabloyu ortak bir sütun üzerinden birleştirmeni sağlar - gerçek dünyadaki veritabanlarının çoğu birden fazla tablodan oluşur.`,
+    "veritabanı": "SQL'in detaylı anlatımı ve örnek kod için 'sql' yazabilirsin.",
+
+    "typescript": `TypeScript nedir?
+TypeScript'i, JavaScript'in daha kontrollü ve gelişmiş hali gibi düşünebilirsin. Değişkenlerin türünü (tip) belirterek büyük projelerde hatayı yazarken yakalamayı kolaylaştırır. Ücretsiz mi? Evet.
+
+Daha kapsamlı bir örnek - tip güvenli bir ürün yönetim sistemi:
+
+// Bir "arayüz" (interface) tanımlıyoruz - Urun'ün nasıl görünmesi gerektiğini belirtir
+interface Urun {
+    ad: string;
+    fiyat: number;
+    stokta: boolean;
+}
+
+function fiyatGoster(urun: Urun): string {
+    if (!urun.stokta) {
+        return urun.ad + " şu an stokta yok.";
+    }
+    return urun.ad + ": " + urun.fiyat + " TL";
+}
+
+const urunler: Urun[] = [
+    { ad: "Kulaklık", fiyat: 450, stokta: true },
+    { ad: "Klavye", fiyat: 300, stokta: false }
+];
+
+urunler.forEach(urun => {
+    console.log(fiyatGoster(urun));
+});
+
+// TypeScript, yanlış tipte veri verirsen SENİ UYARIR (kod çalışmadan önce hatayı gösterir):
+// fiyatGoster({ ad: "Mouse", fiyat: "yüz elli", stokta: true });
+// ^ HATA: fiyat alanı 'number' olmalı, 'string' verilemez
+
+Bu "önceden hata yakalama" özelliği, projeler büyüdükçe TypeScript'i JavaScript'e göre çok daha güvenli yapar.`,
+    "ts": "TypeScript'in detaylı anlatımı ve örnek kod için 'typescript' yazabilirsin.",
+
+    "yol haritası": `Hepsini öğrenmek zorunda değilsin! Ne yapmak istediğine göre seç:
+
+🌐 Web sitesi yapmak: HTML -> CSS -> JavaScript -> SQL -> PHP / Node.js
+📱 Mobil uygulama: Android için Kotlin, iPhone için Swift, çapraz platform için Flutter/React Native.
+🎮 Oyun: Unity (C#) veya Unreal Engine (C++).
+🤖 Yapay zekâ: Python (NumPy, PyTorch, TensorFlow vb.)
+🖥️ Sistem/donanıma yakın yazılım: C, C++ veya Rust.
+☁️ Sunucu/Backend/Cloud sistemleri: Go, Java, C# veya PHP.
+
+Herhangi birinin ismini yazarsan sana o dilde detaylı bir örnek kod gösterebilirim.`,
+    "hangi dil": "Hangi dille başlaman gerektiğini öğrenmek için 'yol haritası' yazabilirsin.",
+    "nereden başla": "Hangi dille başlaman gerektiğini öğrenmek için 'yol haritası' yazabilirsin.",
+
+    // -----------------------------------------
+    // YEMEK TARİFLERİ
+    // -----------------------------------------
+    "yemek tarifi": "Sana tarif verebilirim! Şunları deneyebilirsin: 'menemen', 'mercimek çorbası', 'makarna', 'omlet', 'kuru fasulye'.",
+    "tarif": "Sana tarif verebilirim! Şunları deneyebilirsin: 'menemen', 'mercimek çorbası', 'makarna', 'omlet', 'kuru fasulye'.",
+
+    "menemen": `Menemen Tarifi (2 Kişilik):
+Malzemeler: 2 adet domates, 1 adet yeşil biber, 3 yumurta, 1 yemek kaşığı tereyağı, tuz, karabiber.
+
+Yapılışı:
+1. Tereyağını tavada eritin, ince doğranmış biberi ekleyip 2 dakika kavurun.
+2. Rendelenmiş veya küçük doğranmış domatesleri ekleyin, suyunu çekene kadar pişirin (yaklaşık 8-10 dakika).
+3. Tuz ve karabiber ekleyin.
+4. Yumurtaları kırıp karıştırmadan veya hafifçe karıştırarak ekleyin.
+5. Yumurta kıvamınıza gelene kadar (3-5 dakika) pişirip sıcak servis edin.`,
+
+    "mercimek çorbası": `Mercimek Çorbası Tarifi (4 Kişilik):
+Malzemeler: 1 su bardağı kırmızı mercimek, 1 adet soğan, 1 adet havuç, 1 yemek kaşığı un, 1 yemek kaşığı tereyağı, tuz, kırmızı biber, 6 su bardağı su.
+
+Yapılışı:
+1. Tereyağını tencerede eritin, doğranmış soğan ve havucu ekleyip yumuşayana kadar kavurun.
+2. Unu ekleyip 1 dakika kavurun (çorbaya kıvam verir).
+3. Yıkanmış mercimeği ve suyu ekleyin.
+4. Mercimekler dağılana kadar (yaklaşık 20-25 dakika) kaynatın.
+5. Blenderdan geçirip pürüzsüz hale getirin, tuz ekleyin.
+6. Üzerine kızdırılmış tereyağı ve kırmızı biberle servis edin.`,
+
+    "makarna": `Kolay Domatesli Makarna Tarifi (4 Kişilik):
+Malzemeler: 500g makarna, 2 yemek kaşığı zeytinyağı, 1 diş sarımsak, 400g doğranmış domates (konserve olabilir), tuz, kekik.
+
+Yapılışı:
+1. Bol tuzlu suda makarnayı paket üzerindeki süreye göre haşlayın.
+2. Ayrı bir tavada zeytinyağında ezilmiş sarımsağı kavurun.
+3. Domatesleri ekleyip 10-15 dakika kısık ateşte pişirin, tuz ve kekik ekleyin.
+4. Süzülmüş makarnayı sosla karıştırın.
+5. İsteğe göre üzerine rendelenmiş peynir serpiştirip servis edin.`,
+
+    "omlet": `Sade Omlet Tarifi (1 Kişilik):
+Malzemeler: 2-3 yumurta, 1 tatlı kaşığı süt (opsiyonel), tuz, karabiber, yağ.
+
+Yapılışı:
+1. Yumurtaları bir kapta çırpın, süt ve tuzu ekleyin.
+2. Tavayı orta ateşte ısıtıp yağı ekleyin.
+3. Karışımı tavaya dökün.
+4. Alt tarafı pişince (yaklaşık 2 dakika) katlayarak veya ters çevirerek pişirmeye devam edin.
+5. İçi çok fazla sıvı kalmayacak şekilde pişirip servis edin.`,
+
+    "kuru fasulye": `Etli Kuru Fasulye Tarifi (4 Kişilik):
+Malzemeler: 2 su bardağı kuru fasulye (bir gece önceden ıslatılmış), 200g kuşbaşı et, 1 soğan, 2 yemek kaşığı salça, tuz, yağ, su.
+
+Yapılışı:
+1. Islatılmış fasulyeyi süzüp bir tencereye alın, üzerini geçecek kadar su ekleyip haşlayın.
+2. Ayrı bir tencerede yağda soğan ve eti kavurun.
+3. Salçayı ekleyip 2 dakika daha kavurun.
+4. Haşlanmış fasulyeyi suyuyla birlikte ekleyin.
+5. Tuz ekleyip fasulyeler yumuşayana kadar (yaklaşık 40-50 dakika) kısık ateşte pişirin.
+6. Pilav ile servis edin.`,
+
+    // -----------------------------------------
+    // FİLM VE DİZİ ÖNERİLERİ
+    // -----------------------------------------
+    "film öner": `Film Önerileri (Türe Göre):
+- Aksiyon: Mad Max: Fury Road, John Wick, Dark Knight
+- Bilim Kurgu: Interstellar, Inception, Blade Runner 2049
+- Dram: Yeşil Yol (The Green Mile), Forrest Gump, Şawshank Redemption
+- Komedi: Kaptan Bulgur, Süper Lig, Hababam Sınıfı
+- Korku: Aramızda, Sinsi, Şeytan Tüyü
+- Animasyon: Coco, Yukarı Bak (Up), Spider-Man: Spider-Verse
+
+Hangi türde daha spesifik bir öneri istersen söyleyebilirsin.`,
+    "film önerisi": `Film Önerileri (Türe Göre):
+- Aksiyon: Mad Max: Fury Road, John Wick, Dark Knight
+- Bilim Kurgu: Interstellar, Inception, Blade Runner 2049
+- Dram: Yeşil Yol (The Green Mile), Forrest Gump, Şawshank Redemption
+- Komedi: Kaptan Bulgur, Süper Lig, Hababam Sınıfı
+- Korku: Aramızda, Sinsi, Şeytan Tüyü
+- Animasyon: Coco, Yukarı Bak (Up), Spider-Man: Spider-Verse
+
+Hangi türde daha spesifik bir öneri istersen söyleyebilirsin.`,
+
+    "dizi öner": `Dizi Önerileri (Türe Göre):
+- Dram: Ezel, Kızıl Elma, Breaking Bad
+- Bilim Kurgu / Fantastik: Stranger Things, Dark, Game of Thrones
+- Suç/Gerilim: Money Heist (La Casa de Papel), Mindhunter
+- Komedi: Brooklyn Nine-Nine, Friends
+- Tarihi: Diriliş Ertuğrul, Vikings
+
+Hangi türde daha spesifik bir öneri istersen söyleyebilirsin.`,
+    "dizi önerisi": `Dizi Önerileri (Türe Göre):
+- Dram: Ezel, Kızıl Elma, Breaking Bad
+- Bilim Kurgu / Fantastik: Stranger Things, Dark, Game of Thrones
+- Suç/Gerilim: Money Heist (La Casa de Papel), Mindhunter
+- Komedi: Brooklyn Nine-Nine, Friends
+- Tarihi: Diriliş Ertuğrul, Vikings
+
+Hangi türde daha spesifik bir öneri istersen söyleyebilirsin.`,
+
+    // -----------------------------------------
+    // UZAY VE BİLİM
+    // -----------------------------------------
+    "güneş sistemi": `Güneş Sistemi Gezegenleri (Güneş'e Yakınlık Sırasıyla):
+1. Merkür - En küçük ve Güneş'e en yakın gezegen.
+2. Venüs - En sıcak gezegen (yoğun sera etkisi nedeniyle).
+3. Dünya - Yaşamın bilinen tek gezegeni.
+4. Mars - "Kızıl Gezegen", yüzeyinde demir oksit bulunur.
+5. Jüpiter - Güneş Sistemi'nin en büyük gezegeni, gaz devi.
+6. Satürn - Belirgin halkalarıyla bilinir, gaz devi.
+7. Uranüs - Yan yatık ekseniyle döner, buz devi.
+8. Neptün - Güneş'ten en uzak gezegen, buz devi.
+
+Not: Plüton 2006'dan beri "cüce gezegen" olarak sınıflandırılıyor, artık resmi gezegen sayılmıyor.`,
+    "gezegen": `Güneş Sistemi Gezegenleri (Güneş'e Yakınlık Sırasıyla):
+1. Merkür - En küçük ve Güneş'e en yakın gezegen.
+2. Venüs - En sıcak gezegen (yoğun sera etkisi nedeniyle).
+3. Dünya - Yaşamın bilinen tek gezegeni.
+4. Mars - "Kızıl Gezegen", yüzeyinde demir oksit bulunur.
+5. Jüpiter - Güneş Sistemi'nin en büyük gezegeni, gaz devi.
+6. Satürn - Belirgin halkalarıyla bilinir, gaz devi.
+7. Uranüs - Yan yatık ekseniyle döner, buz devi.
+8. Neptün - Güneş'ten en uzak gezegen, buz devi.
+
+Not: Plüton 2006'dan beri "cüce gezegen" olarak sınıflandırılıyor, artık resmi gezegen sayılmıyor.`,
+
+    "kara delik": `Kara Delik Nedir?
+Kara delik, yerçekimi o kadar güçlü olan bir uzay bölgesidir ki hiçbir şey, ışık dahil, ondan kaçamaz.
+
+Nasıl oluşur? Büyük kütleli bir yıldız yakıtını tükettiğinde kendi çekim gücüyle çöker ve çok küçük, çok yoğun bir noktaya (tekillik) dönüşür.
+
+Olay Ufku: Kara deliğin etrafındaki, geçildiğinde geri dönüşün mümkün olmadığı sınıra "olay ufku" denir.
+
+2019'da bilim insanları ilk kez bir kara deliğin gerçek fotoğrafını (Event Horizon Telescope projesi ile) yayınladı.`,
+
+    "evren": `Evren Hakkında Temel Bilgiler:
+- Evren, Büyük Patlama (Big Bang) ile yaklaşık 13.8 milyar yıl önce oluşmaya başladığı düşünülüyor.
+- Evren sürekli genişliyor; galaksiler birbirinden uzaklaşıyor.
+- Gözlemlenebilir evrende yüz milyarlarca galaksi olduğu tahmin ediliyor.
+- Samanyolu, bizim güneş sistemimizin bulunduğu galaksidir ve yaklaşık 100-400 milyar yıldız barındırır.
+- Evrenin büyük kısmı (yaklaşık %95'i) kara madde ve kara enerjiden oluşur; bunlar doğrudan gözlemlenemez ama etkileri hesaplanabilir.`,
+
+    "yıldız": `Yıldızlar Hakkında:
+- Yıldızlar, çekirdeklerinde hidrojeni helyuma dönüştüren (füzyon) devasa gaz küreleridir.
+- Güneşimiz de orta boy sarı bir yıldızdır.
+- Yıldızların rengi sıcaklıklarına göre değişir: Mavi yıldızlar en sıcak, kırmızı yıldızlar ise daha soğuktur.
+- Büyük yıldızlar yakıtlarını tükettiğinde süpernova denen dev patlamalarla ölür, çok büyükse geriye kara delik bırakabilir.
+- Gökyüzünde çıplak gözle gördüğümüz "yıldızların" bazıları aslında gezegenlerdir (örneğin Venüs, Mars).`
+};
+        const kurtariciCevap = "Ben yeni bir yapay zekâyım ve her geçen gün daha fazla şey öğreniyorum. Bu konu hakkında henüz yeterli bilgim olmadığı için seni yanıltmak istemem. Çok yakında aradığın bütün soruların cevabını Bluversea’da bulabileceksin."
+
+        // =========================================================
+        // İNGİLİZCE İÇERİK HAVUZU
+        // Tüm 172 Türkçe konunun birebir çevirisi değil (bu, elle
+        // yazılması gereken devasa bir iş olurdu); en çok talep gören
+        // konuların (kodlama, yemek, film, uzay, selamlaşma) tam
+        // İngilizce karşılığı burada. Kapsam dışında kalan bir konu
+        // İngilizce sorulursa kurtariciCevapEN devreye girer.
+        // =========================================================
+        const cevapHavuzuEN = {
+            "hello": "Hi! I'm Bluversea, how can I help you today?",
+            "hi": "Hi! I'm Bluversea, how can I help you today?",
+            "hey": "Hey! How can I help you today?",
+            "how are you": "I'm doing great, thanks for asking! How can I help you?",
+            "who are you": "I'm an intelligent assistant built by Bluversea to help you.",
+            "what is bluversea": "Bluversea is a professional technology business that builds modern, fast, sales-ready web pages for brands.",
+
+            "football": "Football is played between two teams of 11 players. You can also ask me about 'offside', 'throw-in', 'penalty', or 'field size'.",
+            "offside": "In football, offside means an attacking player is closer to the opponent's goal line than the last defender (excluding the goalkeeper) when the ball is played to them.",
+            "penalty": "A penalty is a shot taken from 12 yards (11 meters) after a major foul inside the penalty area.",
+
+            "recipe": "I can give you a recipe! Try: 'menemen', 'lentil soup', 'pasta', 'omelette', 'dry beans'.",
+            "menemen": `Menemen Recipe (Turkish Scrambled Eggs, serves 2):
+Ingredients: 2 tomatoes, 1 green pepper, 3 eggs, 1 tbsp butter, salt, black pepper.
+
+Steps:
+1. Melt the butter in a pan, sauté the finely chopped pepper for 2 minutes.
+2. Add grated or finely chopped tomatoes, cook until the liquid reduces (about 8-10 minutes).
+3. Add salt and pepper.
+4. Crack in the eggs, either mixing gently or leaving them slightly whole.
+5. Cook until the eggs reach your preferred consistency (3-5 minutes) and serve hot.`,
+            "lentil soup": `Turkish Red Lentil Soup Recipe (serves 4):
+Ingredients: 1 cup red lentils, 1 onion, 1 carrot, 1 tbsp flour, 1 tbsp butter, salt, paprika, 6 cups water.
+
+Steps:
+1. Melt the butter in a pot, sauté the chopped onion and carrot until soft.
+2. Add the flour and cook for 1 minute (this thickens the soup).
+3. Add the washed lentils and water.
+4. Simmer until the lentils fall apart (about 20-25 minutes).
+5. Blend until smooth, add salt.
+6. Serve with melted butter and paprika drizzled on top.`,
+            "pasta": `Easy Tomato Pasta Recipe (serves 4):
+Ingredients: 500g pasta, 2 tbsp olive oil, 1 garlic clove, 400g chopped tomatoes, salt, oregano.
+
+Steps:
+1. Boil the pasta in well-salted water according to the package instructions.
+2. In a separate pan, sauté crushed garlic in olive oil.
+3. Add the tomatoes, simmer for 10-15 minutes, season with salt and oregano.
+4. Mix the drained pasta with the sauce.
+5. Top with grated cheese if desired and serve.`,
+            "omelette": `Simple Omelette Recipe (serves 1):
+Ingredients: 2-3 eggs, 1 tsp milk (optional), salt, black pepper, oil.
+
+Steps:
+1. Whisk the eggs in a bowl, add milk and salt.
+2. Heat oil in a pan over medium heat.
+3. Pour in the egg mixture.
+4. Once the bottom sets (about 2 minutes), fold or flip to continue cooking.
+5. Cook until no runny egg remains, then serve.`,
+            "dry beans": `Turkish Dry Beans with Meat Recipe (serves 4):
+Ingredients: 2 cups dry white beans (soaked overnight), 200g diced beef, 1 onion, 2 tbsp tomato paste, salt, oil, water.
+
+Steps:
+1. Drain the soaked beans, cover with water in a pot, and boil.
+2. In a separate pot, sauté the onion and meat in oil.
+3. Add the tomato paste and cook for another 2 minutes.
+4. Add the boiled beans with their water.
+5. Add salt and simmer on low heat until the beans are soft (about 40-50 minutes).
+6. Serve with rice.`,
+
+            "movie": `Movie Recommendations (by Genre):
+- Action: Mad Max: Fury Road, John Wick, The Dark Knight
+- Sci-Fi: Interstellar, Inception, Blade Runner 2049
+- Drama: The Green Mile, Forrest Gump, The Shawshank Redemption
+- Comedy: classic feel-good comedies
+- Horror: Hereditary, Insidious, The Conjuring
+- Animation: Coco, Up, Spider-Man: Into the Spider-Verse
+
+Tell me a specific genre if you want a more focused list.`,
+            "movie recommendation": "Ask me 'movie' for genre-based recommendations!",
+            "tv show": `TV Show Recommendations (by Genre):
+- Drama: Breaking Bad, Better Call Saul
+- Sci-Fi / Fantasy: Stranger Things, Dark, Game of Thrones
+- Crime/Thriller: Money Heist, Mindhunter
+- Comedy: Brooklyn Nine-Nine, Friends
+- Historical: Vikings
+
+Tell me a specific genre if you want a more focused list.`,
+
+            "solar system": `Solar System Planets (in order from the Sun):
+1. Mercury - the smallest and closest to the Sun.
+2. Venus - the hottest planet.
+3. Earth - the only known planet with life.
+4. Mars - the "Red Planet".
+5. Jupiter - the largest planet, a gas giant.
+6. Saturn - known for its prominent rings.
+7. Uranus - rotates on its side.
+8. Neptune - the farthest planet from the Sun.
+
+Note: Pluto has been classified as a "dwarf planet" since 2006.`,
+            "planet": "Ask me 'solar system' for a full list of the planets!",
+            "black hole": `What is a Black Hole?
+A black hole is a region of space where gravity is so strong that nothing, not even light, can escape.
+
+How it forms: when a massive star runs out of fuel, it collapses under its own gravity into an extremely dense point.
+
+Event horizon: the boundary around a black hole beyond which nothing can return.
+
+In 2019, scientists published the first-ever real photo of a black hole.`,
+            "universe": `Universe Basics:
+- The universe is believed to have begun with the Big Bang about 13.8 billion years ago.
+- The universe is constantly expanding; galaxies are moving apart from each other.
+- The observable universe is estimated to contain hundreds of billions of galaxies.
+- The Milky Way, our own galaxy, contains an estimated 100-400 billion stars.
+- Most of the universe (around 95%) is made up of dark matter and dark energy, which can't be directly observed.`,
+            "star": `About Stars:
+- Stars are massive balls of gas that fuse hydrogen into helium in their cores.
+- Our Sun is a medium-sized yellow star.
+- A star's color depends on its temperature: blue stars are hottest, red stars are cooler.
+- Massive stars die in huge explosions called supernovae, sometimes leaving behind a black hole.
+- Some "stars" you see in the sky are actually planets (like Venus or Mars).`,
+
+            "coding": "Coding is how we tell computers what to do. Ask me about a specific language: HTML, CSS, JavaScript, Python, Java, C, C++, C#, Kotlin, Swift, Go, Rust, PHP, SQL, TypeScript.",
+            "programming": "Coding is how we tell computers what to do. Ask me about a specific language: HTML, CSS, JavaScript, Python, Java, C, C++, C#, Kotlin, Swift, Go, Rust, PHP, SQL, TypeScript.",
+
+            "html": `What is HTML?
+HTML is the skeleton of a web page. It defines where the title, text, buttons, images, menus, forms, and tables go. The browser reads it and builds the page. It's not technically a "programming" language - it's a markup language. 100% free.
+
+A more detailed example - a simple profile page:
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>My Profile</title>
+</head>
+<body>
+    <header>
+        <h1>Hi, I'm Alex</h1>
+        <p>Aspiring web developer.</p>
+    </header>
+
+    <nav>
+        <a href="#about">About</a>
+        <a href="#projects">Projects</a>
+        <a href="#contact">Contact</a>
+    </nav>
+
+    <section id="about">
+        <h2>About Me</h2>
+        <p>I'm learning HTML, CSS, and JavaScript.</p>
+        <img src="photo.jpg" alt="My profile photo" width="150">
+    </section>
+
+    <section id="projects">
+        <h2>My Projects</h2>
+        <ul>
+            <li>Personal blog</li>
+            <li>Simple calculator</li>
+        </ul>
+    </section>
+
+    <section id="contact">
+        <h2>Contact</h2>
+        <form>
+            <label for="email">Email:</label>
+            <input type="email" id="email" name="email" required>
+            <button type="submit">Send</button>
+        </form>
+    </section>
+
+    <footer>
+        <p>&copy; 2026 Alex's Site</p>
+    </footer>
+</body>
+</html>
+
+<header>, <nav>, <section>, and <footer> are "semantic" tags - they describe what each part of the page is for, both to the browser and to other developers reading your code.`,
+
+            "css": `What is CSS?
+If HTML is the skeleton, CSS is the appearance. You use it to set colors, sizes, positioning, animations, responsiveness, and shadows. Free? Yes.
+
+A more detailed example - a flexbox card layout with a hover effect:
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: Arial, sans-serif;
+    background-color: #f5f5f5;
+}
+
+.card-area {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+    justify-content: center;
+    padding: 24px;
+}
+
+.card {
+    background: white;
+    border-radius: 12px;
+    padding: 20px;
+    width: 220px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    transition: transform 0.2s ease;
+}
+
+.card:hover {
+    transform: translateY(-6px);
+}
+
+/* Stack cards vertically on small screens */
+@media (max-width: 600px) {
+    .card-area {
+        flex-direction: column;
+        align-items: center;
+    }
+}
+
+The @media block is what's called "responsive design" - it automatically changes the layout when the screen gets smaller (like on a phone).`,
+
+            "javascript": `What is JavaScript?
+HTML: "There's a button on the page." CSS: "The button is blue." JavaScript: "What happens when you click it?" JavaScript is what makes a page interactive, does calculations, and responds to the user. With Node.js it can also run on a server. Free? Yes.
+
+A more detailed example - a simple to-do list:
+
+let todos = ["Go to the store", "Write code", "Read a book"];
+
+function addTodo(newTodo) {
+    todos.push(newTodo);
+    console.log(newTodo + " added.");
+}
+
+function completeTodo(todo) {
+    todos = todos.filter(function (t) {
+        return t !== todo;
+    });
+}
+
+function showList() {
+    todos.forEach(function (todo, index) {
+        console.log((index + 1) + ". " + todo);
+    });
+}
+
+addTodo("Exercise");
+completeTodo("Go to the store");
+showList();
+
+// A real example triggered by a button click (embedded in HTML):
+// <button onclick="sayHello()">Click</button>
+function sayHello() {
+    alert("Hello! You clicked the button.");
+}
+
+push(), filter(), and forEach() are the functions you'll use most often when working with arrays.`,
+
+            "python": `What is Python?
+Python is one of the easiest popular languages to learn. You can do AI, machine learning, data analysis, bots, and automation with it. Completely free and open-source.
+
+A more detailed example - a student grade average calculator:
+
+students = {
+    "Alice": [85, 90, 78],
+    "Bob": [60, 70, 65],
+    "Carla": [95, 92, 98]
+}
+
+def calculate_average(grades):
+    return sum(grades) / len(grades)
+
+def letter_grade(average):
+    if average >= 85:
+        return "A"
+    elif average >= 70:
+        return "B"
+    elif average >= 50:
+        return "C"
+    else:
+        return "F"
+
+for name, grades in students.items():
+    avg = calculate_average(grades)
+    print(f"{name}: Average = {avg:.1f}, Grade = {letter_grade(avg)}")
+
+class Student:
+    def __init__(self, name, grades):
+        self.name = name
+        self.grades = grades
+
+    def average(self):
+        return sum(self.grades) / len(self.grades)
+
+student1 = Student("Dan", [80, 88, 92])
+print(f"{student1.name}'s average: {student1.average():.1f}")
+
+Dictionaries, functions (def), loops (for), and classes (class) are the four building blocks you'll use most in Python.`,
+
+            "c language": `What is C?
+C is old but still hugely important. It's used in operating systems, embedded systems, microcontrollers, and hardware-level programming. It teaches you how a computer really works (RAM, CPU, memory, pointers). Free? Yes.
+
+A more detailed example - calculating the average of numbers:
+
+#include <stdio.h>
+
+float calculate_average(int arr[], int size) {
+    int total = 0;
+    for (int i = 0; i < size; i++) {
+        total += arr[i];
+    }
+    return (float)total / size;
+}
+
+int main() {
+    int grades[] = {85, 90, 78, 92, 60};
+    int size = 5;
+
+    float avg = calculate_average(grades, size);
+    printf("Average: %.2f\\n", avg);
+
+    // Pointer example - an important C-specific concept
+    int number = 10;
+    int *numberAddress = &number;
+    printf("Value: %d\\n", *numberAddress);
+
+    return 0;
+}
+
+Pointers hold the memory address of a variable - one of the concepts that sets C apart from many other languages.`,
+
+            "c++": `What is C++?
+C++ extends C with object-oriented features. It's used for games, game engines, performance-critical applications, and desktop software. It's one of the core technologies behind Unreal Engine. Free? Yes.
+
+A more detailed example - a simple class:
+
+#include <iostream>
+#include <string>
+using namespace std;
+
+class Car {
+private:
+    string brand;
+    int speed;
+
+public:
+    Car(string b) {
+        brand = b;
+        speed = 0;
+    }
+
+    void accelerate(int amount) {
+        speed += amount;
+        cout << brand << " is now going " << speed << " km/h." << endl;
+    }
+
+    void brake() {
+        speed = 0;
+        cout << brand << " has stopped." << endl;
+    }
+};
+
+int main() {
+    Car car1("Toyota");
+    car1.accelerate(50);
+    car1.accelerate(30);
+    car1.brake();
+
+    return 0;
+}
+
+Classes let you model real-world objects (a car, a user, a product) in code - the heart of object-oriented programming (OOP).`,
+
+            "c#": `What is C#?
+C# is especially popular in the Microsoft ecosystem: Windows apps, web, desktop software, and backend systems. It's also important for game development with Unity. Free? Yes.
+
+A more detailed example - a simple inventory system:
+
+using System;
+using System.Collections.Generic;
+
+class Product {
+    public string Name { get; set; }
+    public int Stock { get; set; }
+
+    public Product(string name, int stock) {
+        Name = name;
+        Stock = stock;
+    }
+
+    public void ReduceStock(int amount) {
+        if (amount > Stock) {
+            Console.WriteLine("Not enough stock: " + Name);
+        } else {
+            Stock -= amount;
+            Console.WriteLine(amount + " units of " + Name + " sold. Remaining: " + Stock);
+        }
+    }
+}
+
+class Program {
+    static void Main() {
+        List<Product> products = new List<Product> {
+            new Product("Pen", 100),
+            new Product("Notebook", 50)
+        };
+
+        foreach (Product p in products) {
+            Console.WriteLine(p.Name + " - Stock: " + p.Stock);
+        }
+
+        products[0].ReduceStock(30);
+    }
+}
+
+Generic collections like List<Product> are the standard way to work with groups of data in C#.`,
+
+            "java": `What is Java?
+Java has a huge ecosystem: Android apps, large enterprise software, banking systems, and backend development. Thanks to the Java Virtual Machine (JVM), it runs smoothly across different operating systems. Free? Yes.
+
+A more detailed example - a simple bank account class:
+
+import java.util.ArrayList;
+import java.util.List;
+
+class Transaction {
+    String type;
+    double amount;
+
+    Transaction(String type, double amount) {
+        this.type = type;
+        this.amount = amount;
+    }
+}
+
+class BankAccount {
+    private double balance;
+    private List<Transaction> transactions = new ArrayList<>();
+
+    public void deposit(double amount) {
+        balance += amount;
+        transactions.add(new Transaction("Deposit", amount));
+        System.out.println(amount + " deposited. New balance: " + balance);
+    }
+
+    public void withdraw(double amount) {
+        if (amount > balance) {
+            System.out.println("Insufficient funds!");
+            return;
+        }
+        balance -= amount;
+        transactions.add(new Transaction("Withdrawal", amount));
+        System.out.println(amount + " withdrawn. New balance: " + balance);
+    }
+}
+
+public class Main {
+    public static void main(String[] args) {
+        BankAccount account = new BankAccount();
+        account.deposit(1000);
+        account.withdraw(300);
+    }
+}
+
+Every Java file contains at least one class, and the entry point of a program is always the main() method.`,
+
+            "kotlin": `What is Kotlin?
+Kotlin is especially important for Android - it's one of Google's officially recommended languages for Android development. Free? Yes.
+
+A more detailed example - a simple task manager:
+
+data class Task(val title: String, var done: Boolean = false)
+
+fun main() {
+    val tasks = mutableListOf(
+        Task("Go shopping"),
+        Task("Write code"),
+        Task("Exercise")
+    )
+
+    tasks[1].done = true
+
+    for (task in tasks) {
+        val status = if (task.done) "✔" else "◻"
+        println("$status \${task.title}")
+    }
+
+    val hour = 14
+    val timeOfDay = when {
+        hour < 6 -> "Night"
+        hour < 12 -> "Morning"
+        hour < 18 -> "Afternoon"
+        else -> "Evening"
+    }
+    println("It's currently: $timeOfDay")
+}
+
+"data class" is a very handy Kotlin-specific feature - it lets you define simple data-holding classes in one line.`,
+
+            "swift": `What is Swift?
+Swift is the language Apple created for iPhone, iPad, Mac, and Apple Watch apps. The language itself is free.
+
+A more detailed example - a simple shopping cart:
+
+struct Product {
+    var name: String
+    var price: Double
+}
+
+struct Cart {
+    var items: [Product] = []
+
+    mutating func add(_ item: Product) {
+        items.append(item)
+        print("\\(item.name) added to cart.")
+    }
+
+    func total() -> Double {
+        return items.reduce(0) { total, item in total + item.price }
+    }
+}
+
+var myCart = Cart()
+myCart.add(Product(name: "Headphones", price: 45.0))
+myCart.add(Product(name: "Charging Cable", price: 9.0))
+
+print("Total: \\(myCart.total())")
+
+var username: String? = nil
+if let name = username {
+    print("Hello, \\(name)")
+} else {
+    print("No username entered.")
+}
+
+Optionals (String?) let you safely handle values that might or might not exist (nil) - one of Swift's biggest safety features.`,
+
+            "golang": `What is Go (Golang)?
+Go was created by Google. It's used for servers, backend systems, cloud infrastructure, networking, and large-scale systems. Free? Yes.
+
+A more detailed example - a simple task list with a concurrency example:
+
+package main
+
+import "fmt"
+
+type Task struct {
+    Title string
+    Done  bool
+}
+
+func printTasks(tasks []Task) {
+    for i, t := range tasks {
+        status := "◻"
+        if t.Done {
+            status = "✔"
+        }
+        fmt.Printf("%d. %s %s\\n", i+1, status, t.Title)
+    }
+}
+
+func main() {
+    tasks := []Task{
+        {"Write code", false},
+        {"Test it", false},
+        {"Deploy", false},
+    }
+
+    tasks[0].Done = true
+    printTasks(tasks)
+
+    channel := make(chan string)
+    go func() {
+        channel <- "Background task finished!"
+    }()
+    fmt.Println(<-channel)
+}
+
+Goroutines (go func() {...}) are what make Go so popular for concurrent systems - you can run things in parallel with very little code.`,
+
+            "rust": `What is Rust?
+Rust is a more modern language, used for performance-critical software, systems programming, security (memory safety), and blockchain. Free? Yes.
+
+A more detailed example - a simple inventory system:
+
+struct Product {
+    name: String,
+    stock: u32,
+}
+
+impl Product {
+    fn new(name: &str, stock: u32) -> Product {
+        Product { name: name.to_string(), stock }
+    }
+
+    fn reduce_stock(&mut self, amount: u32) {
+        if amount > self.stock {
+            println!("Not enough stock for {}!", self.name);
+        } else {
+            self.stock -= amount;
+            println!("{} units of {} sold. Remaining: {}", amount, self.name, self.stock);
+        }
+    }
+}
+
+fn main() {
+    let mut pen = Product::new("Pen", 100);
+    pen.reduce_stock(30);
+
+    let text1 = String::from("hello");
+    let text2 = text1; // ownership of text1 moves to text2
+    println!("{}", text2); // this line works
+    // println!("{}", text1); // this would ERROR - text1 is no longer valid
+}
+
+Ownership is the core concept that makes Rust much safer against memory bugs than most other languages - every value has exactly one owner.`,
+
+            "php": `What is PHP?
+PHP is used mainly on the server side of websites. WordPress, membership systems, admin panels, and e-commerce systems are often built with PHP. Free? Yes.
+
+A more detailed example - a simple login check:
+
+<?php
+$users = [
+    "alice" => "password123",
+    "bob" => "secure456"
+];
+
+function login($username, $password, $users) {
+    if (isset($users[$username]) && $users[$username] === $password) {
+        return "Welcome, " . $username . "!";
+    } else {
+        return "Incorrect username or password.";
+    }
+}
+
+echo login("alice", "password123", $users);
+echo "\\n";
+echo login("alice", "wrongPassword", $users);
+
+// Handling data from a form (used in real web pages):
+// $username = $_POST['username'];
+// $password = $_POST['password'];
+?>
+
+$_POST and $_GET show how PHP captures data a user submits through a form - this is how login forms typically work on websites.`,
+
+            "sql": `What is SQL?
+SQL isn't a programming language - it's a database query language. You use it to add, delete, update, and search data. Free (used with tools like MySQL, PostgreSQL, or SQLite).
+
+More detailed examples - a "students" and "courses" database scenario:
+
+CREATE TABLE students (
+    id INT PRIMARY KEY,
+    name VARCHAR(50),
+    age INT
+);
+
+INSERT INTO students (id, name, age) VALUES (1, 'Alice', 20);
+INSERT INTO students (id, name, age) VALUES (2, 'Bob', 22);
+
+SELECT * FROM students;
+
+SELECT name FROM students WHERE age > 20;
+
+UPDATE students SET age = 21 WHERE name = 'Alice';
+
+DELETE FROM students WHERE name = 'Bob';
+
+SELECT students.name, courses.course_name
+FROM students
+JOIN courses ON students.id = courses.student_id;
+
+JOIN lets you combine two different tables through a shared column - most real-world databases span multiple tables.`,
+
+            "typescript": `What is TypeScript?
+Think of TypeScript as JavaScript with extra safety rails. By declaring the types of your variables, it helps you catch mistakes while you're writing code, which is especially useful in large projects. Free? Yes.
+
+A more detailed example - a type-safe product system:
+
+interface Product {
+    name: string;
+    price: number;
+    inStock: boolean;
+}
+
+function showPrice(product: Product): string {
+    if (!product.inStock) {
+        return product.name + " is currently out of stock.";
+    }
+    return product.name + ": $" + product.price;
+}
+
+const products: Product[] = [
+    { name: "Headphones", price: 45, inStock: true },
+    { name: "Keyboard", price: 30, inStock: false }
+];
+
+products.forEach(product => {
+    console.log(showPrice(product));
+});
+
+// TypeScript WARNS you if you pass the wrong type (before the code even runs):
+// showPrice({ name: "Mouse", price: "fifteen", inStock: true });
+// ^ ERROR: price must be 'number', not 'string'
+
+This "catch errors before running" feature is what makes TypeScript much safer than plain JavaScript as projects grow.`,
+
+            "roadmap": `You don't have to learn everything! Pick based on what you want to build:
+
+🌐 Websites: HTML -> CSS -> JavaScript -> SQL -> PHP / Node.js
+📱 Mobile apps: Kotlin for Android, Swift for iPhone, Flutter/React Native for cross-platform.
+🎮 Games: Unity (C#) or Unreal Engine (C++).
+🤖 AI: Python (NumPy, PyTorch, TensorFlow, etc.)
+🖥️ Systems/low-level software: C, C++, or Rust.
+☁️ Servers/Backend/Cloud: Go, Java, C#, or PHP.
+
+Name any of these languages and I'll show you a detailed example.`
+        };
+
+        const kurtariciCevapEN = "I'm a new AI and I'm still learning more every day. I don't have enough information on this topic yet, and I don't want to give you a wrong answer. Soon you'll be able to find the answer to every question here on Bluversea.";
+
+        function handleKeyPress(event) {
+            if (event.key === "Enter") {
+                sendMessage();
+            }
+        }
+
+        function sendQuickMessage(text) {
+            document.getElementById("userInput").value = text;
+            sendMessage();
+        }
+
+        function sendMessage() {
+            const inputField = document.getElementById("userInput");
+            const userText = inputField.value.trim();
+
+            if (userText === "") return;
+
+            addMessageToChat("user", userText);
+            inputField.value = "";
+
+            showTypingIndicator(userText);
+        }
+
+        function addMessageToChat(sender, text) {
+            const chatBox = document.getElementById("chatBox");
+
+            // İlk mesaj gönderilince karşılama ekranını (logo + hoş geldin yazısı) gizle
+            const welcomeScreen = document.getElementById("welcomeScreen");
+            if (welcomeScreen) {
+                welcomeScreen.style.display = "none";
+            }
+
+            const messageDiv = document.createElement("div");
+            
+            messageDiv.classList.add("message");
+            messageDiv.classList.add(sender === "user" ? "user-message" : "bot-message");
+            
+            messageDiv.textContent = text;
+            chatBox.appendChild(messageDiv);
+            
+            chatBox.scrollTop = chatBox.scrollHeight;
+        }
+
+        // YENİ SOHBET: mesajları temizler, karşılama ekranını (logo + hoş geldin) TEKRAR GÖRÜNÜR yapar.
+        // Not: Karşılama ekranı silinip yeniden oluşturulmuyor, sadece gizle/göster yapılıyor.
+        // Böylece logo görseli yalnızca sayfa ilk açıldığında bir kez yüklenir ve bir daha
+        // hiç yeniden yüklenmeye çalışılmaz - kaybolma sorununun kökü buydu.
+        function yeniSohbetBaslat() {
+            const chatBox = document.getElementById("chatBox");
+            const welcomeScreen = document.getElementById("welcomeScreen");
+
+            // Karşılama ekranı DIŞINDAKİ tüm mesaj balonlarını kaldır
+            const mesajlar = chatBox.querySelectorAll(".message");
+            mesajlar.forEach(function (mesaj) {
+                mesaj.remove();
+            });
+
+            // Karşılama ekranını tekrar görünür yap (silip yeniden oluşturmak yerine)
+            if (welcomeScreen) {
+                welcomeScreen.style.display = "flex";
+            }
+
+            document.getElementById("userInput").value = "";
+            bekleyenSoru = null; // Bekleyen bir netleştirme sorusu varsa onu da sıfırla
+        }
+
+        // Sol üstteki menü butonu - şu an için görsel/dekoratif (ileride sohbet geçmişi için kullanılabilir)
+        function menuAc() {
+            // Bu özellik henüz aktif değil, ileride buraya sohbet geçmişi paneli eklenebilir.
+        }
+
+        function showTypingIndicator(userText) {
+            const chatBox = document.getElementById("chatBox");
+            const typingDiv = document.createElement("div");
+            
+            typingDiv.classList.add("message", "bot-message", "typing-indicator");
+            typingDiv.id = "typingIndicator";
+            typingDiv.textContent = "Yazıyor...";
+            
+            chatBox.appendChild(typingDiv);
+            chatBox.scrollTop = chatBox.scrollHeight;
+
+            // Yapay zeka hissi için 1.2 saniye bekle
+            setTimeout(() => {
+                chatBox.removeChild(typingDiv);
+                const botCevabi = findAnswer(userText);
+                typeWriterEffect(botCevabi);
+            }, 1200); 
+        }
+
+       function findAnswer(userText) {
+    // 0. AŞAMA: Bekleyen bir netleştirme sorusu var mı? (dilden bağımsız, her şeyden önce kontrol edilir)
+    if (bekleyenSoru !== null) {
+        const aktifSoru = bekleyenSoru;
+        const kelimeSayisi = userText.trim().split(/\s+/).length;
+        bekleyenSoru = null; // Durumu her durumda sıfırla
+
+        // Kullanıcının cevabı kısa ise (numara ya da birkaç kelime), bunu soruya cevap say.
+        // Uzun/alakasız bir şey yazdıysa, soruyu unut ve mesajı normal şekilde işlemeye devam et.
+        if (kelimeSayisi <= 8) {
+            return netlestirmeYapilandirmasi[aktifSoru].cevapVer(userText);
+        }
+    }
+
+    const dil = dilTespitEt(userText); // 'tr' veya 'en'
+    let kucukHarfText = userText.toLocaleLowerCase(dil === 'en' ? 'en-US' : 'tr-TR');
+
+    // YAZIYI RAKAMA ÇEVİREN SİHİRLİ SÖZLÜK (yalnızca Türkçe sayı kelimeleri için)
+    function yaziyiRakamaCevir(metin) {
+        const sozluk = {
+            "sıfır":0, "bir":1, "iki":2, "üç":3, "dört":4, "beş":5, "altı":6, "yedi":7, "sekiz":8, "dokuz":9,
+            "on":10, "yirmi":20, "otuz":30, "kırk":40, "elli":50, "altmış":60, "atmış":60, "yetmiş":70, "seksen":80, "doksan":90,
+            "yüz":100, "bin":1000
+        };
+        
+        let kelimeler = metin.trim().split(/\s+/);
+        let sonucMetni = [];
+        let aktifSayi = 0, geciciSayi = 0, sayiModu = false;
+        
+        for(let i=0; i<kelimeler.length; i++) {
+            let kelime = kelimeler[i];
+            if(sozluk[kelime] !== undefined) {
+                sayiModu = true;
+                let val = sozluk[kelime];
+                if(val === 100) {
+                    if(geciciSayi === 0) geciciSayi = 1;
+                    geciciSayi *= 100;
+                } else if (val === 1000) {
+                    if(geciciSayi === 0) geciciSayi = 1;
+                    geciciSayi *= 1000;
+                    aktifSayi += geciciSayi;
+                    geciciSayi = 0;
+                } else {
+                    geciciSayi += val;
+                }
+            } else {
+                if(sayiModu) {
+                    aktifSayi += geciciSayi;
+                    sonucMetni.push(aktifSayi.toString());
+                    aktifSayi = 0; geciciSayi = 0; sayiModu = false;
+                }
+                sonucMetni.push(kelime);
+            }
+        }
+        if(sayiModu) {
+            aktifSayi += geciciSayi;
+            sonucMetni.push(aktifSayi.toString());
+        }
+        return sonucMetni.join(" ");
+    }
+
+    // 1. Önce yazıları rakama çevir
+    let rakamliMetin = yaziyiRakamaCevir(kucukHarfText);
+
+    // 2. Sonra kelime işlemleri sembollere çevir
+    let islemMetni = rakamliMetin
+        .replace(/artı/g, '+')
+        .replace(/eksi/g, '-')
+        .replace(/çarpı/g, '*')
+        .replace(/x/g, '*')
+        .replace(/bölü/g, '/')
+        .replace(/,/g, '.');
+
+    // MATEMATİK FİLTRESİ
+    const matematikFiltresi = /^[0-9\+\-\*\/\.\s\(\)\%]+$/;
+    if(matematikFiltresi.test(islemMetni) && /[0-9]/.test(islemMetni) && /[\+\-\*\/]/.test(islemMetni)) {
+        try {
+            const sonuc = Function('return ' + islemMetni)();
+            if(isFinite(sonuc)) {
+                return (dil === 'en' ? "Result: " : "Bu işlemin sonucu: ") + sonuc;
+            }
+        } catch (e) {}
+    }
+
+    // FUTBOL ŞAMPİYONU SORGUSU
+    const futbolCevabi = findFootballChampion(kucukHarfText, dil);
+    if (futbolCevabi) {
+        return futbolCevabi;
+    }
+
+    // NETLEŞTİRME SORUSU TETİKLEYİCİLERİ (şu an sadece Türkçe konularda aktif)
+    const kucukHarfTextBosluksuz = bosluksuz(kucukHarfText);
+    if (dil === 'tr') {
+        for (const anahtar in netlestirmeYapilandirmasi) {
+            const yapilandirma = netlestirmeYapilandirmasi[anahtar];
+            for (const tetik of yapilandirma.tetikleyiciler) {
+                if (esnekIcerir(kucukHarfTextBosluksuz, bosluksuz(tetik))) {
+                    bekleyenSoru = anahtar;
+                    return yapilandirma.soru;
+                }
+            }
+        }
+    }
+
+    // KELİME HAVUZUNU TARA (İKİ AŞAMALI ARAMA) - dile göre doğru havuzu seç
+    const aktifHavuz = dil === 'en' ? cevapHavuzuEN : cevapHavuzu;
+
+    // 1. AŞAMA: TAM eşleşen TÜM anahtarları bul, aralarından EN UZUN (en spesifik) olanı seç.
+    // Bu önemli: "tarif" (genel) ile "menemen" (özel) ikisi de eşleşirse, "tarif" gibi kısa/genel
+    // bir kelimenin daha spesifik "menemen" cevabını gölgelememesi gerekir - en uzun eşleşme kazanır.
+    let enIyiAnahtar = null;
+    let enIyiUzunluk = -1;
+    for (const anahtarKelime in aktifHavuz) {
+        const anahtarBosluksuz = bosluksuz(anahtarKelime);
+        if (anahtarMetindeVarMi(kucukHarfText, kucukHarfTextBosluksuz, anahtarKelime, anahtarBosluksuz, false) && anahtarBosluksuz.length > enIyiUzunluk) {
+            enIyiAnahtar = anahtarKelime;
+            enIyiUzunluk = anahtarBosluksuz.length;
+        }
+    }
+    if (enIyiAnahtar !== null) {
+        return aktifHavuz[enIyiAnahtar];
+    }
+
+    // 2. AŞAMA: Tam eşleşme bulunamadıysa, yazım hatasına toleranslı ara (yine en uzun eşleşme kazanır).
+    enIyiAnahtar = null;
+    enIyiUzunluk = -1;
+    for (const anahtarKelime in aktifHavuz) {
+        const anahtarBosluksuz = bosluksuz(anahtarKelime);
+        if (anahtarMetindeVarMi(kucukHarfText, kucukHarfTextBosluksuz, anahtarKelime, anahtarBosluksuz, true) && anahtarBosluksuz.length > enIyiUzunluk) {
+            enIyiAnahtar = anahtarKelime;
+            enIyiUzunluk = anahtarBosluksuz.length;
+        }
+    }
+    if (enIyiAnahtar !== null) {
+        return aktifHavuz[enIyiAnahtar];
+    }
+
+    // Aktif dilde bulunamadı; İngilizce sorulduysa ve TR havuzunda varsa bunu da dene
+    // (bazı konular henüz İngilizce'ye çevrilmedi, en azından Türkçe cevabı görsün diye değil -
+    // yalnızca kullanıcıyı bilgilendiren nazik bir mesaj döndürüyoruz)
+    return dil === 'en' ? kurtariciCevapEN : kurtariciCevap;
+}
+
+        // 3. İNSANSI YAZMA EFEKTİ (HARF HARF BASMA)
+        function typeWriterEffect(text) {
+            const chatBox = document.getElementById("chatBox");
+            const messageDiv = document.createElement("div");
+            
+            messageDiv.classList.add("message", "bot-message");
+            chatBox.appendChild(messageDiv);
+            
+            let i = 0;
+            const speed = 20; // Ne kadar düşük o kadar hızlı yazar
+            
+            function type() {
+                if (i < text.length) {
+                    messageDiv.textContent += text.charAt(i);
+                    i++;
+                    chatBox.scrollTop = chatBox.scrollHeight;
+                    setTimeout(type, speed);
+                }
+            }
+            
+            type();
+        }
+    </script>
+</body>
+</html>
